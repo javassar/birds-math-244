@@ -1,0 +1,21 @@
+---
+title: "Birds"
+author: "Sydney Kahn and Jacqueline Adelmann"
+format: html
+editor: visual
+---
+
+
+```{r}
+#| label: loading in the data
+#| echo: false
+
+tuesdata <- tidytuesdayR::tt_load('2026-04-14')
+
+beaufort_scale <- tuesdata$beaufort_scale
+birds <- tuesdata$birds
+sea_states <- tuesdata$sea_states
+ships <- tuesdata$ships
+
+```
+
