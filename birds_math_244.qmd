@@ -5,10 +5,11 @@ format: html
 editor: visual
 ---
 
-
 ```{r}
 #| label: loading in the data
 #| echo: false
+#| warning: false
+#| message: false 
 
 tuesdata <- tidytuesdayR::tt_load('2026-04-14')
 
@@ -18,4 +19,84 @@ sea_states <- tuesdata$sea_states
 ships <- tuesdata$ships
 
 ```
+
+We are looking at bird sightings at sea, which comes from https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. 
+
+```{r}
+#| label: load packages
+#| echo: false 
+#| warning: false
+#| message: false
+
+library(tidyverse)
+```
+
+```{r}
+#| label: merging dfs
+#| echo: false
+
+# merge ship and sea data 
+ships <- ships %>%
+  left_join(beaufort_scale, by = "wind_speed_class") %>%
+  left_join(sea_states, by = "sea_state_class") %>%
+  mutate(date = as.Date(date),
+         year = year(date),
+         month = month(date))
+
+# merge birds with ship and sea data
+df <- birds %>%
+  left_join(ships, by = "record_id")
+```
+
+```{r}
+#| label: looking at missing data
+#| echo: false
+
+# total number of missing values
+sum(is.na(df))
+# proportion of missing values in entire dataset
+mean(is.na(df))
+
+
+#want to see if certain cols have a lot msising
+missing_summary <- df %>%
+  summarise(across(everything(), ~ mean(is.na(.)))) %>%
+  pivot_longer(cols = everything(),
+               names_to = "column",
+               values_to = "prop_missing") %>%
+  arrange(desc(prop_missing))
+
+missing_summary
+```
+
+```{r}
+#| label: cleaning missing data
+#| echo: false
+
+#remove sex because it's completely missing 
+df <- df %>%
+  select(-sex)
+
+
+## need to keep working on this
+```
+
+```{r}
+#| label: some summary eda
+#| echo: false
+
+sessions <- df %>%
+  group_by(record_id) %>%
+  summarise(
+    total_birds = sum(count, na.rm = TRUE),
+    n_species = n_distinct(species_common_name),
+    n_accompanying = sum(n_accompanying, na.rm = TRUE),
+    n_flying_past = sum(n_flying_past, na.rm = TRUE),
+    n_feeding = sum(n_feeding, na.rm = TRUE),
+    n_sitting_water = sum(n_sitting_on_water, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  left_join(ships, by = "record_id")
+```
+
 
