@@ -5,9 +5,10 @@ format: html
 editor: visual
 ---
 
+# Exploring the data 
 ```{r}
 #| label: loading in the data
-#| echo: false
+#| echo: true
 #| warning: false
 #| message: false 
 
@@ -20,20 +21,19 @@ ships <- tuesdata$ships
 
 ```
 
-We are looking at bird sightings at sea, which comes from https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. 
-
 ```{r}
 #| label: load packages
-#| echo: false 
+#| echo: true 
 #| warning: false
 #| message: false
 
-library(tidyverse)
+library(tidyverse) # for general purposes and ggplot 
+library(kableExtra) # for nice tables
 ```
 
 ```{r}
 #| label: merging dfs
-#| echo: false
+#| echo: true
 
 # merge ship and sea data 
 ships <- ships %>%
@@ -49,8 +49,8 @@ df <- birds %>%
 ```
 
 ```{r}
-#| label: looking at missing data
-#| echo: false
+#| label: managing missing data
+#| include: false
 
 # total number of missing values
 sum(is.na(df))
@@ -58,45 +58,115 @@ sum(is.na(df))
 mean(is.na(df))
 
 
-#want to see if certain cols have a lot msising
-missing_summary <- df %>%
+#want to see if certain cols have a lot missing
+missing_summary_raw_df <- df %>%
   summarise(across(everything(), ~ mean(is.na(.)))) %>%
   pivot_longer(cols = everything(),
                names_to = "column",
                values_to = "prop_missing") %>%
   arrange(desc(prop_missing))
 
-missing_summary
+missing_summary_raw_df
+
+#clean the data. did it this way because there is a missing data problem both by row and by column, and clearing either individually would leave us with no data 
+df_clean <- df %>%
+  select(-sex) %>% # sex is entirely missing
+  select(where(~ mean(is.na(.)) <= 0.2)) %>% 
+  filter(rowMeans(is.na(.)) <= 0.2)
+
+# see where we're at after removing some things 
+missing_summary_cleaned_df <- df_clean %>%
+  summarise(across(everything(), ~ mean(is.na(.)))) %>%
+  pivot_longer(cols = everything(),
+               names_to = "column",
+               values_to = "prop_missing") %>%
+  arrange(desc(prop_missing))
+
+missing_summary_cleaned_df
+
+# total number of missing values
+sum(is.na(df_clean))
+# proportion of missing values in entire dataset
+mean(is.na(df_clean))
+
+
+# this is pretty good. we could still remove some more cols if we deem it necessary, but this might be good enough
 ```
 
-```{r}
-#| label: cleaning missing data
-#| echo: false
-
-#remove sex because it's completely missing 
-df <- df %>%
-  select(-sex)
-
-
-## need to keep working on this
-```
 
 ```{r}
-#| label: some summary eda
-#| echo: false
+#| label: summary statistics table
+#| echo: true
 
-sessions <- df %>%
+# i don't like how i did this. need to improve 
+sessions <- df_clean %>%
   group_by(record_id) %>%
   summarise(
     total_birds = sum(count, na.rm = TRUE),
     n_species = n_distinct(species_common_name),
-    n_accompanying = sum(n_accompanying, na.rm = TRUE),
-    n_flying_past = sum(n_flying_past, na.rm = TRUE),
-    n_feeding = sum(n_feeding, na.rm = TRUE),
-    n_sitting_water = sum(n_sitting_on_water, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   left_join(ships, by = "record_id")
+
+
+# need to add aesthetic items 
+kable(sessions)
+
 ```
 
+We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14.
 
+Answer the following questions:
+What is your outcome variable(s)? How well does it measure the outcome you are interested? How does it
+relate to your expectations?
+What are your key explanatory variables?
+In addition, create a table of summary statistics for the variables you are planning to use.
+
+
+# Data Wrangling and Transformation
+
+What data cleaning did you have to do?
+How did you wrangle the data?
+Are you deciding to exclude any observations? If so, why?
+Did you have to create any new variables from existing variables? If so, how and why?
+
+
+Add a codebook – a description of all variables you are using, including ones you are creating for this
+project – to the README.md page of the data/ folder of your repo.
+
+# Data Visualization
+```{r}
+#| label: viz-one
+#| fig-cap: This figure shows 
+#| echo: true
+
+# figure
+
+```
+
+```{r}
+#| label: viz-two
+#| fig-cap: This figure shows xyz
+#| echo: true
+
+# figure
+
+```
+
+```{r}
+#| label: viz-three
+#| fig-cap: This figure showssss
+#| echo: true
+
+# figure
+
+```
+
+```{r}
+#| label: viz-four
+#| fig-cap: This figure shows abc
+#| echo: true
+
+# figure
+
+```
