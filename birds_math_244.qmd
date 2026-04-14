@@ -6,6 +6,9 @@ editor: visual
 ---
 
 # Exploring the data 
+
+We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. Each observation communicates the data that an observer witnessed during a 10-minute period at a port. 
+
 ```{r}
 #| label: loading in the data
 #| echo: true
@@ -28,7 +31,7 @@ ships <- tuesdata$ships
 #| message: false
 
 library(tidyverse) # for general purposes and ggplot 
-library(kableExtra) # for nice tables
+library(gtsummary) # for nice tables
 ```
 
 ```{r}
@@ -57,7 +60,6 @@ sum(is.na(df))
 # proportion of missing values in entire dataset
 mean(is.na(df))
 
-
 #want to see if certain cols have a lot missing
 missing_summary_raw_df <- df %>%
   summarise(across(everything(), ~ mean(is.na(.)))) %>%
@@ -68,11 +70,29 @@ missing_summary_raw_df <- df %>%
 
 missing_summary_raw_df
 
+# 
+# common_name (or group species!)
+# protocol_type
+# duration_minutes
+# effort_distance_km
+# number_observers
+# hour
+# season
+# location (stat
+#           
 #clean the data. did it this way because there is a missing data problem both by row and by column, and clearing either individually would leave us with no data 
+
 df_clean <- df %>%
-  select(-sex) %>% # sex is entirely missing
-  select(where(~ mean(is.na(.)) <= 0.2)) %>% 
-  filter(rowMeans(is.na(.)) <= 0.2)
+  filter(!is.na(count)) %>% # these are variables we definitely want to use, so filter out observations that are missing these. species common name has the fewest missing obvs of the three different types of species name columns. doing them in separate lines because the or command wasn't working correctly for some reasons
+  filter(!is.na(latitude)) %>%
+  filter(!is.na(longitude)) %>%
+  filter(!is.na(year)) %>%
+  filter(!is.na(month)) %>%
+  filter(!is.na(species_common_name)) %>% 
+  select(where(~ mean(is.na(.)) <= 0.6)) %>% 
+  filter(rowMeans(is.na(.)) <= 0.6) %>%
+  select(where(~ mean(is.na(.)) <= 0.2)) %>%
+  filter(rowMeans(is.na(.)) <= 0.0) 
 
 # see where we're at after removing some things 
 missing_summary_cleaned_df <- df_clean %>%
@@ -89,58 +109,138 @@ sum(is.na(df_clean))
 # proportion of missing values in entire dataset
 mean(is.na(df_clean))
 
-
-# this is pretty good. we could still remove some more cols if we deem it necessary, but this might be good enough
 ```
-
 
 ```{r}
-#| label: summary statistics table
-#| echo: true
+#| label: making some new variables
+#| echo: false
 
-# i don't like how i did this. need to improve 
-sessions <- df_clean %>%
-  group_by(record_id) %>%
-  summarise(
-    total_birds = sum(count, na.rm = TRUE),
-    n_species = n_distinct(species_common_name),
-    .groups = "drop"
-  ) %>%
-  left_join(ships, by = "record_id")
+# species column has a LOT of species that are observed very few times. going to make a new variable that collapses rare ones into one "other" column
+df_clean <- df_clean %>%
+  group_by(species_common_name) %>%
+  mutate(species_count = n()) %>%
+  ungroup() %>%
+  mutate(species_simplified = case_when(
+    species_count/nrow(df_clean) >= 0.01 ~ species_common_name,
+    TRUE ~ "other"
+  )) %>%
+  select(-species_count)
 
 
-# need to add aesthetic items 
-kable(sessions)
+# this still has a lot of unique birds. it may be better to do family level
+df_clean <- df_clean %>%
+  mutate(species_family = case_when(
+    str_detect(species_common_name, "albatross|mollymawk") ~ "Albatross",
+    str_detect(species_common_name, "petrel|shearwater|prion|fulmar|diving-petrel") ~ "Petrel/Shearwater/Prion",
+    str_detect(species_common_name, "gull|tern|noddy") ~ "Gull/Tern",
+    str_detect(species_common_name, "skua|jaeger") ~ "Skua/Jaeger",
+    str_detect(species_common_name, "penguin") ~ "Penguin",
+    str_detect(species_common_name, "gannet|booby") ~ "Gannet/Booby",
+    str_detect(species_common_name, "cormorant|shag") ~ "Cormorant/Shag",
+    str_detect(species_common_name, "frigatebird|tropicbird") ~ "Frigatebird/Tropicbird",
+    TRUE ~ "Unidentified/Other"
+  )) 
 
+count(df_clean, species_family)
 ```
 
-We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14.
+```{r}
+#| label: summary stats table 
+#| echo: false
 
-Answer the following questions:
-What is your outcome variable(s)? How well does it measure the outcome you are interested? How does it
-relate to your expectations?
-What are your key explanatory variables?
-In addition, create a table of summary statistics for the variables you are planning to use.
+# factoring species so that unidentified comes last 
+df_clean <- df_clean %>%
+  mutate(species_family = factor(species_family,
+                                levels = c(
+                                  "Albatross",
+                                  "Petrel/Shearwater/Prion",
+                                  "Gull/Tern",
+                                  "Skua/Jaeger",
+                                  "Penguin",
+                                  "Gannet/Booby",
+                                  "Cormorant/Shag",
+                                  "Frigatebird/Tropicbird",
+                                  "Unidentified/Other"
+                                )))
+
+# print table. selecting our core variables, which are the ones that we are investigating in EDA 
+df_clean %>%
+  select(
+    species_family,
+    count,
+    season,
+    cloud_cover, precipitation,
+    feeding, flying_past, following_ship,
+    sea_state_description,
+    longitude,
+    latitude
+  ) %>%
+  mutate(
+    season = str_to_title(season),
+    precipitation = str_to_title(precipitation),
+    cloud_cover = str_to_title(cloud_cover),
+    sea_state_description = str_to_title(sea_state_description)
+  ) %>%
+  rename(
+         "Bird Family" = species_family,
+         "Bird count" = count,
+         "Number of birds feeding" = feeding,
+         "Number of birds flying past" = flying_past,
+         "Number of birds following ships" = following_ship,
+         "Cloud cover" = cloud_cover,
+         "Season" = season,
+         "Precipitation" = precipitation,
+         "Sea state" = sea_state_description,
+         "Longitude" = longitude,
+         "Latitude" = latitude
+         ) %>%
+  tbl_summary(
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    missing = "ifany"
+  ) %>%
+    as_gt() %>%
+  gt::tab_caption("Table 1. Summary of bird observations")
+```
+
+Our key outcome variable currently is bird count, which measures how many total birds an observer witnessed during an observation session. We are secondarily interested in looking at counts of birds doing specific activities, such as feeding, flying past, and following ships. Our key explanatory variables are season, longitude, latitude, precipitation, cloud cover, and sea state. We expect that the number of birds will vary dramatically depending on the season and location, but that poor weather will also affect bird count at a more granular level. 
 
 
 # Data Wrangling and Transformation
 
-What data cleaning did you have to do?
-How did you wrangle the data?
-Are you deciding to exclude any observations? If so, why?
-Did you have to create any new variables from existing variables? If so, how and why?
+We wrangled the data via the base R object `tt_load`, which allows us to directly load TidyTuesday data from Github. We merged the separate data frames by the TidyTuesday-recommend identifier columns recommended to form a data frame with `r dim(df)[1]` observations of `r dim(df)[2]` variables. 
 
+As for data cleaning, we chose to exclude some observations and variables with missing data to ensure that our exploratory assessments were not distorted by data that would need to be removed for modeling purposes. We first removed any observations that were missing our core variables: bird count, species common name, latitude, longitude, year, and month. Next, we performed an iterative process of removing columns and observations with missing data; we removed variables with more than 60% of observations missing, then observations with more than 60% of variables missing, then variables with more than 20% of observations missing, and, finally, observations with any missing data. This iterative process allowed us to retain `r dim(df_clean)[1]` observations and `r dim(df_clean)[2]` variables. 
 
-Add a codebook – a description of all variables you are using, including ones you are creating for this
-project – to the README.md page of the data/ folder of your repo.
+We created a new variable that categorized birds by family rather than species because most individual species were observed very few times, but overall families were observed frequently.
+
+******Add a codebook – a description of all variables you are using, including ones you are creating for this
 
 # Data Visualization
 ```{r}
 #| label: viz-one
 #| fig-cap: This figure shows 
 #| echo: true
+ 
+# grab summary so we can plot iqr 
+df_summary <- df_clean %>%
+  distinct(record_id, .keep_all = TRUE) %>% # so we don't count one session multiple times 
+  group_by(season) %>%
+  summarise(
+    mean_count = mean(count, na.rm = TRUE),
+    q1 = quantile(count, 0.25, na.rm = TRUE),
+    q3 = quantile(count, 0.75, na.rm = TRUE)
+  ) 
 
-# figure
+ggplot(df_summary, aes(x = season, y = mean_count)) + 
+  geom_col() +
+  geom_errorbar(aes(ymin = q1, ymax = q3), width = 0.2) +
+  labs(title = "Mean Number of Birds Observed by Season with IQR",
+       x = "Season",
+       y = "Mean Number of Birds") +
+  theme_minimal()
 
 ```
 
@@ -150,6 +250,13 @@ project – to the README.md page of the data/ folder of your repo.
 #| echo: true
 
 # figure
+df_geo <- df_clean %>%
+  distinct(record_id, .keep_all = TRUE) %>%
+  filter(!is.na(longitude), !is.na(latitude)) %>%
+  select(longitude, latitude)
+
+ggplot(df_geo, aes(x = longitude, y = latitude)) +
+  geom_point(alpha = 0.4)
 
 ```
 
