@@ -5,9 +5,9 @@ format: html
 editor: visual
 ---
 
-# Exploring the data 
+# Exploring the data
 
-We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. Each observation communicates the data that an observer witnessed during a 10-minute period at a port. 
+We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. Each observation communicates the data that an observer witnessed during a 10-minute period at a port.
 
 ```{r}
 #| label: loading in the data
@@ -32,6 +32,7 @@ ships <- tuesdata$ships
 
 library(tidyverse) # for general purposes and ggplot 
 library(gtsummary) # for nice tables
+library(maps) # for plotting latitude and longitude 
 ```
 
 ```{r}
@@ -141,7 +142,6 @@ df_clean <- df_clean %>%
     TRUE ~ "Unidentified/Other"
   )) 
 
-count(df_clean, species_family)
 ```
 
 ```{r}
@@ -205,36 +205,36 @@ df_clean %>%
   gt::tab_caption("Table 1. Summary of bird observations")
 ```
 
-Our key outcome variable currently is bird count, which measures how many total birds an observer witnessed during an observation session. We are secondarily interested in looking at counts of birds doing specific activities, such as feeding, flying past, and following ships. Our key explanatory variables are season, longitude, latitude, precipitation, cloud cover, and sea state. We expect that the number of birds will vary dramatically depending on the season and location, but that poor weather will also affect bird count at a more granular level. 
-
+Our key outcome variable currently is bird count, which measures how many total birds an observer witnessed during an observation session. We are secondarily interested in looking at counts of birds doing specific activities, such as feeding, flying past, and following ships. Our key explanatory variables are season, longitude, latitude, precipitation, cloud cover, and sea state. We expect that the number of birds will vary dramatically depending on the season and location, but that poor weather will also affect bird count at a more granular level.
 
 # Data Wrangling and Transformation
 
-We wrangled the data via the base R object `tt_load`, which allows us to directly load TidyTuesday data from Github. We merged the separate data frames by the TidyTuesday-recommend identifier columns recommended to form a data frame with `r dim(df)[1]` observations of `r dim(df)[2]` variables. 
+We wrangled the data via the base R object `tt_load`, which allows us to directly load TidyTuesday data from Github. We merged the separate data frames by the TidyTuesday-recommend identifier columns recommended to form a data frame with `r dim(df)[1]` observations of `r dim(df)[2]` variables.
 
-As for data cleaning, we chose to exclude some observations and variables with missing data to ensure that our exploratory assessments were not distorted by data that would need to be removed for modeling purposes. We first removed any observations that were missing our core variables: bird count, species common name, latitude, longitude, year, and month. Next, we performed an iterative process of removing columns and observations with missing data; we removed variables with more than 60% of observations missing, then observations with more than 60% of variables missing, then variables with more than 20% of observations missing, and, finally, observations with any missing data. This iterative process allowed us to retain `r dim(df_clean)[1]` observations and `r dim(df_clean)[2]` variables. 
+As for data cleaning, we chose to exclude some observations and variables with missing data to ensure that our exploratory assessments were not distorted by data that would need to be removed for modeling purposes. We first removed any observations that were missing our core variables: bird count, species common name, latitude, longitude, year, and month. Next, we performed an iterative process of removing columns and observations with missing data; we removed variables with more than 60% of observations missing, then observations with more than 60% of variables missing, then variables with more than 20% of observations missing, and, finally, observations with any missing data. This iterative process allowed us to retain `r dim(df_clean)[1]` observations and `r dim(df_clean)[2]` variables.
 
 We created a new variable that categorized birds by family rather than species because most individual species were observed very few times, but overall families were observed frequently.
 
-******Add a codebook – a description of all variables you are using, including ones you are creating for this
+\*\*\*\*\*\*Add a codebook – a description of all variables you are using, including ones you are creating for this
 
 # Data Visualization
+
 ```{r}
-#| label: viz-one
-#| fig-cap: This figure shows 
-#| echo: true
- 
-# grab summary so we can plot iqr 
+#| label: bar plot (not using)
+#| include: false
+#| echo: false
+
+# grab summary so we can plot iqr
 df_summary <- df_clean %>%
-  distinct(record_id, .keep_all = TRUE) %>% # so we don't count one session multiple times 
+  distinct(record_id, .keep_all = TRUE) %>% # so we don't count one session multiple times
   group_by(season) %>%
   summarise(
     mean_count = mean(count, na.rm = TRUE),
     q1 = quantile(count, 0.25, na.rm = TRUE),
     q3 = quantile(count, 0.75, na.rm = TRUE)
-  ) 
+  )
 
-ggplot(df_summary, aes(x = season, y = mean_count)) + 
+ggplot(df_summary, aes(x = season, y = mean_count)) +
   geom_col() +
   geom_errorbar(aes(ymin = q1, ymax = q3), width = 0.2) +
   labs(title = "Mean Number of Birds Observed by Season with IQR",
@@ -245,35 +245,146 @@ ggplot(df_summary, aes(x = season, y = mean_count)) +
 ```
 
 ```{r}
-#| label: viz-two
-#| fig-cap: This figure shows xyz
+#| label: viz-one
+#| fig-cap: Boxplot of log-transformed number of birds observed by season. Log-transformation was used due to the data's extreme right skew.
 #| echo: true
 
-# figure
-df_geo <- df_clean %>%
-  distinct(record_id, .keep_all = TRUE) %>%
-  filter(!is.na(longitude), !is.na(latitude)) %>%
-  select(longitude, latitude)
+# take log count of birds 
+df_clean <- df_clean %>%
+  mutate(log_count = log10(count + 1))
 
-ggplot(df_geo, aes(x = longitude, y = latitude)) +
-  geom_point(alpha = 0.4)
+# boxplot of log count by season
+season_box <- ggplot(df_clean, aes(x = season, y = log_count, fill = season)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Distribution of Log Bird Counts by Season",
+       x = "Season",
+       y = "Log Bird Count") +
+  theme(legend.position = "none")
+
+print(season_box)
+
+```
+
+```{r}
+#| label: viz-two
+#| fig-cap: Map of latitude and longitude clusters based on k-means clustering with k=3. 
+#| echo: true
+
+### perform k-means clustering 
+set.seed(244) # for reproducibility 
+
+## first, use the elbow method to find the optimal 'k'
+# set possible values of k (picked 10 randomly)
+k_values <- 1:10
+
+# create a function to compute the Total Within-Cluster Sum of Squares (WCSS) for a given k
+get_wcss <- function(k) {
+  kmeans_model <- kmeans(df_clean %>% select(longitude, latitude), centers = k, nstart = 25)
+  return(kmeans_model$tot.withinss)
+}
+
+# apply function to the range of k values
+set.seed(244) # set seed for reproducibility
+wcss_values <- map_dbl(k_values, get_wcss)
+
+# store the results in a new dataframe
+elbow_df <- tibble(
+  k = k_values,
+  wcss = wcss_values
+)
+
+# plot the elbow curve plot. commented this out because we don't want it to print for our EDA
+# ggplot(elbow_df, aes(x = k, y = wcss)) +
+#   geom_line() +
+#   geom_point() +
+#   scale_x_continuous(breaks = k_values) + # force x-axis to show whole numbers
+#   theme_minimal() +
+#   labs(title = "Elbow Method for Optimal 'k'",
+#        x = "Number of Clusters (k)",
+#        y = "Total Within-Cluster Sum of Squares (WCSS)")
+
+# it looks like three clusters is probably satisfactory
+
+## now, do the k-means clustering
+kmeans_result <- kmeans(df_clean %>% select(longitude, latitude), centers = 3, nstart = 25)
+
+# add the cluster assignments back to the dataset
+df_clean$cluster <- as.factor(kmeans_result$cluster)
+
+# visualize the clusters on a map via maps package 
+world_map <- map_data("world")
+
+# now plot the cluster results 
+ggplot() +
+  # draw the world map 
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), 
+               fill = "lightgray", color = "white") +
+  # plot the clustered observations
+  geom_point(data = df_clean, aes(x = longitude, y = latitude, color = cluster), 
+             alpha = 0.6, size = 1) +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0)) + # zooming map in to just australia-ish area
+  theme_minimal() +
+  labs(title = "Bird Observations Clustered by Location",
+       subtitle = "K-Means Clustering (k=3)",
+       x = "Longitude", 
+       y = "Latitude",
+       color = "Cluster") +
+  theme(legend.position = "bottom")
 
 ```
 
 ```{r}
 #| label: viz-three
-#| fig-cap: This figure showssss
-#| echo: true
+#| fig-cap: Frequency of observed bird activities across all observation sessions. 
+#| echo: false
 
-# figure
+# defining activity columns
+activity_cols <- c("feeding", "sitting_on_water", "sitting_on_ice", "sitting_on_ship",
+                   "in_hand", "flying_past", "accompanying", "following_ship", "naturally_feeding")
+
+# reshape data from wide to long format to summarize activities, and make the activities more nicely formatted for the plot 
+df_activities <- df_clean %>%
+  select(all_of(activity_cols)) %>%
+  pivot_longer(cols = everything(), names_to = "activity_type", values_to = "is_doing") %>%
+  # filter only the TRUE observations
+  filter(is_doing == TRUE) %>%
+  mutate(
+    activity_type = str_replace_all(activity_type, "_", " "), # replace underscores with spaces
+    activity_type = str_to_title(activity_type)               # capitalize first letters
+  )
+
+# plot the frequency of each activity
+ggplot(df_activities, aes(x = fct_infreq(activity_type))) +
+  geom_bar(fill = "red4", color = "black", alpha = 0.8) +
+  coord_flip() + # flip coordinates for easier reading of labels
+  theme_minimal() +
+  labs(title = "Frequency of Observed Bird Activities",
+       x = "Activity Type",
+       y = "Total Occurrences")
 
 ```
 
 ```{r}
 #| label: viz-four
-#| fig-cap: This figure shows abc
-#| echo: true
+#| echo: false
+#| fig-cap: Boxplot of log bird count by sea state.
 
-# figure
+df_sea_state <- df_clean %>% 
+  mutate(
+    # capitalize the first letter of each word
+    sea_state_description = str_to_title(sea_state_description) 
+  )
 
+# boxplot of log count by sea state
+sea_state_box <- ggplot(df_sea_state, 
+             aes(x = reorder(sea_state_description, log_count, FUN = median), y = log_count)) +
+  geom_boxplot(fill = "red4", alpha = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Bird Counts Relative to Sea State",
+       x = "Sea State",
+       y = "Log Bird Count")
+
+print(sea_state_box)
 ```
