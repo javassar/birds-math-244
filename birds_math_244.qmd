@@ -1,6 +1,8 @@
 ---
-title: "Birds"
+title: "Bird Sightings at Sea"
+subtitle: "An Exploratory Data Analysis"
 author: "Sydney Kahn and Jacqueline Adelmann"
+date: "17 April 2026"
 format: html
 editor: visual
 ---
