@@ -116,7 +116,7 @@ mean(is.na(df_clean))
 
 ```{r}
 #| label: making some new variables
-#| echo: false
+#| echo: true
 
 # species column has a LOT of species that are observed very few times. going to make a new variable that collapses rare ones into one "other" column
 df_clean <- df_clean %>%
@@ -148,7 +148,7 @@ df_clean <- df_clean %>%
 
 ```{r}
 #| label: summary stats table 
-#| echo: false
+#| echo: true
 
 # factoring species so that unidentified comes last 
 df_clean <- df_clean %>%
@@ -360,7 +360,7 @@ ggplot() +
 ```{r}
 #| label: viz-three
 #| fig-cap: Frequency of observed bird activities across all observation sessions. 
-#| echo: false
+#| echo: true
 
 # defining activity columns
 activity_cols <- c("feeding", "sitting_on_water", "sitting_on_ice", "sitting_on_ship",
@@ -390,7 +390,7 @@ ggplot(df_activities, aes(x = fct_infreq(activity_type))) +
 
 ```{r}
 #| label: viz-four
-#| echo: false
+#| echo: true
 #| fig-cap: Boxplot of log bird count by sea state.
 
 df_sea_state <- df_clean %>% 
