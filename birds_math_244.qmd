@@ -217,7 +217,7 @@ As for data cleaning, we chose to exclude some observations and variables with m
 
 We created a new variable that categorized birds by family rather than species because most individual species were observed very few times, but overall families were observed frequently.
 
-::: {.callout collapse="true"}
+::: {.callout collapse="false"}
 ## Codebook
 
 | Variable | Type | Description |
