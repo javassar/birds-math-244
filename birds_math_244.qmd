@@ -84,7 +84,7 @@ missing_summary_raw_df
 #clean the data. did it this way because there is a missing data problem both by row and by column, and clearing either individually would leave us with no data 
 
 df_clean <- df %>%
-  filter(!is.na(count)) %>% # these are variables we definitely want to use, so filter out observations that are missing these. species common name has the fewest missing obvs of the three different types of species name columns. doing them in separate lines because the or command wasn't working correctly for some reasons
+  filter(!is.na(count)) %>% # these are variables we definitely want to use, so filter out observations that are missing these. species common name has the fewest missing obs of the three different types of species name columns. doing them in separate lines because the or command wasn't working correctly for some reason
   filter(!is.na(latitude)) %>%
   filter(!is.na(longitude)) %>%
   filter(!is.na(year)) %>%
@@ -215,7 +215,23 @@ As for data cleaning, we chose to exclude some observations and variables with m
 
 We created a new variable that categorized birds by family rather than species because most individual species were observed very few times, but overall families were observed frequently.
 
-\*\*\*\*\*\*Add a codebook – a description of all variables you are using, including ones you are creating for this
+::: {.callout collapse="true"}
+## Codebook
+
+| Variable | Type | Description |
+|-----------------|----------------|---------------------------------------|
+| `species_family` | character | Bird family, created by grouping species |
+| `count` | integer | Number of birds counted in the observation |
+| `feeding` | integer | Number of birds observed feeding |
+| `flying_past` | integer | Number of birds observed flying past the ship |
+| `following_ship` | integer | Number of birds observed following the ship |
+| `cloud_cover` | ordered | "clear", "partially cloudy" or "overcast" |
+| `season` | ordered | Southern hemisphere season |
+| `precipitation` | factor | Precipitation type, including levels of rain, snow, and fog |
+| `sea_state_description` | ordered | Description of sea state, from "calm, glassy" to "very rough" |
+| `longitude` | double | Decimal longitude |
+| `latitude` | double | Decimal latitude (negative indicates Southern hemisphere) |
+:::
 
 # Data Visualization
 
@@ -278,9 +294,11 @@ set.seed(244) # for reproducibility
 # set possible values of k (picked 10 randomly)
 k_values <- 1:10
 
-# create a function to compute the Total Within-Cluster Sum of Squares (WCSS) for a given k
+# create a function to compute the Total Within-Cluster Sum of Squares (WCSS)
+# for a given k
 get_wcss <- function(k) {
-  kmeans_model <- kmeans(df_clean %>% select(longitude, latitude), centers = k, nstart = 25)
+  kmeans_model <- kmeans(df_clean %>% select(longitude, latitude), centers = k,
+                         nstart = 25)
   return(kmeans_model$tot.withinss)
 }
 
@@ -294,7 +312,8 @@ elbow_df <- tibble(
   wcss = wcss_values
 )
 
-# plot the elbow curve plot. commented this out because we don't want it to print for our EDA
+# plot the elbow curve plot. commented this out because we don't
+# want it to print for our EDA
 # ggplot(elbow_df, aes(x = k, y = wcss)) +
 #   geom_line() +
 #   geom_point() +
@@ -307,7 +326,8 @@ elbow_df <- tibble(
 # it looks like three clusters is probably satisfactory
 
 ## now, do the k-means clustering
-kmeans_result <- kmeans(df_clean %>% select(longitude, latitude), centers = 3, nstart = 25)
+kmeans_result <- kmeans(df_clean %>% select(longitude, latitude),
+                        centers = 3, nstart = 25)
 
 # add the cluster assignments back to the dataset
 df_clean$cluster <- as.factor(kmeans_result$cluster)
@@ -323,7 +343,8 @@ ggplot() +
   # plot the clustered observations
   geom_point(data = df_clean, aes(x = longitude, y = latitude, color = cluster), 
              alpha = 0.6, size = 1) +
-  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0)) + # zooming map in to just australia-ish area
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0)) + # zooming map in to
+  # just australia-ish area
   theme_minimal() +
   labs(title = "Bird Observations Clustered by Location",
        subtitle = "K-Means Clustering (k=3)",
