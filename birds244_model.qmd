@@ -1,0 +1,26 @@
+---
+title: "Further Exploration and Model"
+subtitle: "4/30 Presentation"
+format: 
+  html:
+    page-layout: full
+    theme: cosmo
+    toc: true
+    toc-title: "Contents"
+    embed-resources: true
+    standalone: true
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Further Exploration
+```{r}
+#| label: loading in the data
+#| echo: true
+#| warning: false
+#| message: false 
+
+#read in the cleaned data
+data <- read_csv("birds_clean.csv")
+```

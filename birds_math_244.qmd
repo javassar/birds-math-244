@@ -212,6 +212,9 @@ df_clean %>%
   ) %>%
     as_gt() %>%
   gt::tab_caption("Table 1. Summary of bird observations")
+
+#write csv of cleaned data
+write_csv(df_clean, "birds_clean.csv")
 ```
 
 Our key outcome variable currently is bird count, which measures how many total birds an observer witnessed during an observation session. We are secondarily interested in looking at counts of birds doing specific activities, such as feeding, flying past, and following ships. Our key explanatory variables are season, longitude, latitude, precipitation, cloud cover, and sea state. We expect that the number of birds will vary dramatically depending on the season and location, but that poor weather will also affect bird count at a more granular level.
