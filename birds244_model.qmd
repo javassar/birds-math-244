@@ -40,7 +40,46 @@ ggplot(data_smallcount, aes(x = count)) +
   theme_minimal()
 ```
 
-Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. We then decided to categorize the data into quantiles indicating a scale of number of birds from no birds to very many birds. 
+Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. Since there were so many observations with no birds, we decided to make a new variable that transformed the bird count variable into a binary variable indicating if there were or were not birds spotted. Then, we could make a Logistic Regression to predict the appearance of birds. 
+
+```{r}
+#| label: bird appearance binary variable
+#| echo: false
+#| warning: false 
+#| message: false
+
+# create a new variable that is a binary of whether or not there is a bird
+df_logistic <- data %>%
+  mutate(birds = case_when(count > 1 ~ 1,
+                           count <= 1 ~ 0))
+
+# filter variables
+df_logistic <- df_logistic %>%
+    select(
+    species_family,
+    birds,
+    season,
+    cloud_cover, precipitation,
+    feeding, flying_past, following_ship,
+    sea_state_description,
+    longitude,
+    latitude
+  ) %>%
+  mutate(cloud_cover = factor(cloud_cover, levels = c(
+    "clear", "partially cloudy", "overcast"
+  ))) %>%
+  mutate(sea_state_description = factor(sea_state_description, levels = c(
+    "calm, rippled", "smooth", "slight", "moderate", "rough", "very rough"
+  )))
+
+summary(df_logistic$birds)
+
+lr_1 <- glm(birds ~ ., data = df_logistic, family = "binomial")
+summary(lr_1)
+
+```
+
+We then decided to categorize the data into quantiles indicating a scale of number of birds from no birds to very many birds. 
 
 ```{r}
 #| label: quantiled bird count data
