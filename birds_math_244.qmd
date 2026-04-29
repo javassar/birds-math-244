@@ -234,9 +234,9 @@ We created a new variable that categorized birds by family rather than species b
 |------------------|------------------|-------------------------------------|
 | `species_family` | character | Bird family, created by grouping species |
 | `count` | integer | Number of birds counted in the observation |
-| `feeding` | integer | Number of birds observed feeding |
-| `flying_past` | integer | Number of birds observed flying past the ship |
-| `following_ship` | integer | Number of birds observed following the ship |
+| `feeding` | logical | Birds observed feeding |
+| `flying_past` | logical | Birds observed flying past the ship |
+| `following_ship` | logical | Birds observed following the ship |
 | `cloud_cover` | ordered | "clear", "partially cloudy" or "overcast" |
 | `season` | ordered | Southern hemisphere season |
 | `precipitation` | factor | Precipitation type, including levels of rain, snow, and fog |
@@ -386,6 +386,9 @@ df_activities <- df_clean %>%
     activity_type = str_replace_all(activity_type, "_", " "), # replace underscores with spaces
     activity_type = str_to_title(activity_type)               # capitalize first letters
   )
+
+# write df_activities as a .csv
+write_csv(df_activities, "bird_activities.csv")
 
 # plot the frequency of each activity
 ggplot(df_activities, aes(x = fct_infreq(activity_type))) +

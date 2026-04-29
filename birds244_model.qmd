@@ -15,12 +15,41 @@ editor:
 ---
 
 # Further Exploration
+
+We noticed from EDA that the `count` variable was very right-skewed, and had a large range including regions with very sparse data. To examine this further, and to potentially determine if there was a range of the `count` data that could be used for prediction, we decided to look at the range from a count of 10 to the mean (51.9) plus one standard deviation (1616.5), which is 1668.4 birds. 
 ```{r}
 #| label: loading in the data
 #| echo: true
 #| warning: false
 #| message: false 
+library(tidyverse)
 
 #read in the cleaned data
 data <- read_csv("birds_clean.csv")
+
+# Plot the censored data
+data_smallcount <- data %>%
+  filter(count > 10, count < 1668.4)
+
+ggplot(data_smallcount, aes(x = count)) + 
+  geom_histogram(binwidth = 10) +
+  labs(
+    title = "Bird Count: Censored (10 < count < 1668.4)",
+    x = "Bird Count"
+  ) +
+  theme_minimal()
 ```
+
+Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. We then decided to categorize the data into quantiles indicating a scale of number of birds from no birds to very many birds. 
+
+```{r}
+#| label: quantiled bird count data
+#| echo: true
+#| warning: false
+#| message: false 
+
+# Maybe use Pandas for this
+
+```
+
+Since our `count` data was not Normal, we decided to do some ensemble methods and more flexible modeling. 
