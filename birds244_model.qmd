@@ -23,6 +23,8 @@ We noticed from EDA that the `count` variable was very right-skewed, and had a l
 #| warning: false
 #| message: false 
 library(tidyverse)
+library(caret) # will be needed for CV later
+library(pROC) # will be needed for logistic regression models
 
 #read in the cleaned data
 data <- read_csv("birds_clean.csv")
@@ -87,8 +89,8 @@ Looking at this much smaller region of the `count` data compared to the whole da
 
 # create a new variable that is a binary of whether or not there is a bird
 df_logistic <- data %>%
-  mutate(birds = case_when(count > 1 ~ 1,
-                           count <= 1 ~ 0))
+  mutate(birds = case_when(count > 1 ~ "X1",
+                           count <= 1 ~ "X0"))
 
 # filter variables
 df_logistic <- df_logistic %>%
@@ -107,25 +109,50 @@ df_logistic <- df_logistic %>%
   ))) %>%
   mutate(sea_state_description = factor(sea_state_description, levels = c(
     "calm, rippled", "smooth", "slight", "moderate", "rough", "very rough"
-  )))
+  ))) %>%
+  mutate(birds = factor(birds))
 
-summary(df_logistic$birds)
-
-lr_1 <- glm(birds ~ ., data = df_logistic, family = "binomial")
-summary(lr_1)
-
+#summary(df_logistic$birds)
+# set seed
+set.seed(244)
+# split into test/ train for CV
+test1_id <- sample(1:nrow(df_logistic), size= nrow(df_logistic) * .25)
+train1 <- df_logistic[-test1_id,]
+test1 <- df_logistic[test1_id,]
+# set up control for classification
+ctrl <- trainControl(method = "cv",
+                     number = 10,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+# train model
+lr_1 = train(
+  form = birds ~ season + cloud_cover + sea_state_description +
+    precipitation + species_family + longitude + latitude,
+  data = train1,
+  method = "glm",
+  family = "binomial",
+  metric = "ROC",
+  trControl = ctrl)
+lr_1
+# test model
+test1_pred <- predict(lr_1, newdata = test1)
+test1_prob <- predict(lr_1, newdata=test1, type= "prob")
+# make confusion matrix
+cm1 <- confusionMatrix(data = test1_pred, reference=test1$birds)
+cm1
+# AUC
+roc1 <- roc(test1$birds, test1_prob$X0)
+auc(roc1)
 ```
-
-We then decided to categorize the data into quantiles indicating a scale of number of birds from no birds to very many birds. 
-
 ```{r}
-#| label: quantiled bird count data
-#| echo: true
+#| label: aggregated data model
+#| echo: false
+#| message: false
 #| warning: false
-#| message: false 
 
-# Maybe use Pandas for this
+# code the bird_interval_two variable as a binary variable for logistic regression
 
 ```
+
 
 Since our `count` data was not Normal, we decided to do some ensemble methods and more flexible modeling. 
