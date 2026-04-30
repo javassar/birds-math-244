@@ -42,6 +42,7 @@ ships <- tuesdata$ships
 library(tidyverse) # for general purposes and ggplot 
 library(gtsummary) # for nice tables
 library(maps) # for plotting latitude and longitude 
+library(dbscan)  # for cluster analysis
 ```
 
 ```{r}
@@ -138,7 +139,10 @@ df_clean <- df_clean %>%
 
 
 # this still has a lot of unique birds. it may be better to do family level
-df_clean <- df_clean %>%
+# also calculate log counts since bird is skewed
+# and group rare weather events because they're too infrequent to be statistically useful 
+# also format strings for visualization purposes 
+birds_clean <- df_clean %>%
   mutate(species_family = case_when(
     str_detect(species_common_name, "albatross|mollymawk") ~ "Albatross",
     str_detect(species_common_name, "petrel|shearwater|prion|fulmar|diving-petrel") ~ "Petrel/Shearwater/Prion",
@@ -149,72 +153,106 @@ df_clean <- df_clean %>%
     str_detect(species_common_name, "cormorant|shag") ~ "Cormorant/Shag",
     str_detect(species_common_name, "frigatebird|tropicbird") ~ "Frigatebird/Tropicbird",
     TRUE ~ "Unidentified/Other"
-  )) 
-
-```
-
-```{r}
-#| label: summary stats table 
-#| echo: true
-
-# factoring species so that unidentified comes last 
-df_clean <- df_clean %>%
-  mutate(species_family = factor(species_family,
-                                levels = c(
-                                  "Albatross",
-                                  "Petrel/Shearwater/Prion",
-                                  "Gull/Tern",
-                                  "Skua/Jaeger",
-                                  "Penguin",
-                                  "Gannet/Booby",
-                                  "Cormorant/Shag",
-                                  "Frigatebird/Tropicbird",
-                                  "Unidentified/Other"
-                                )))
-
-# print table. selecting our core variables, which are the ones that we are investigating in EDA 
-df_clean %>%
-  select(
-    species_family,
-    count,
-    season,
-    cloud_cover, precipitation,
-    feeding, flying_past, following_ship,
-    sea_state_description,
-    longitude,
-    latitude
-  ) %>%
-  mutate(
+  ),
+    species_family = factor(species_family, levels = c("Albatross", "Petrel/Shearwater/Prion", "Gull/Tern", "Skua/Jaeger", "Penguin", "Gannet/Booby", "Cormorant/Shag", "Frigatebird/Tropicbird", "Unidentified/Other")),
+    
+    # calculate log counts and intervals for individual observations
+    log_count = log10(count + 1),
+    species_bird_interval = cut(count, 
+                                breaks = c(-Inf, 10, 50, 100, Inf), 
+                                labels = c("0-10", "11-50", "51-100", "100+"),
+                                ordered_result = TRUE),
+    
+    # group rare weather events
+    precip_grouped = case_when(
+      precipitation == "none" ~ "None",
+      precipitation %in% c("rain", "showers", "drizzle") ~ "Rain/Showers",
+      precipitation %in% c("continuous snow", "snow showers", "fog", "squalls") ~ "Harsh Weather",
+      TRUE ~ "Unknown"
+    ),
+    precip_grouped = factor(precip_grouped, levels = c("None", "Rain/Showers", "Harsh Weather", "Unknown")),
+    
+    # format strings for visualization
     season = str_to_title(season),
     precipitation = str_to_title(precipitation),
     cloud_cover = str_to_title(cloud_cover),
     sea_state_description = str_to_title(sea_state_description)
+  ) 
+
+```
+
+```{r}
+#| label: session aggregation
+#| echo: true
+
+# aggregate data to the session level
+session_data <- birds_clean %>%
+  group_by(record_id) %>%
+  summarize(
+    total_birds = sum(count, na.rm = TRUE),
+    any_following_ship = any(following_ship == TRUE, na.rm = TRUE),
+    
+    # keep constant environmental variables
+    latitude = first(latitude),
+    longitude = first(longitude),
+    season = first(season),
+    cloud_cover = first(cloud_cover),
+    sea_state_description = first(sea_state_description),
+    wind_description = first(wind_description),
+    wind_speed_class = first(wind_speed_class),
+    precipitation = first(precipitation),
+    precip_grouped = first(precip_grouped),
+    .groups = 'drop'
   ) %>%
-  rename(
-         "Bird Family" = species_family,
-         "Bird count" = count,
-         "Number of birds feeding" = feeding,
-         "Number of birds flying past" = flying_past,
-         "Number of birds following ships" = following_ship,
-         "Cloud cover" = cloud_cover,
-         "Season" = season,
-         "Precipitation" = precipitation,
-         "Sea state" = sea_state_description,
-         "Longitude" = longitude,
-         "Latitude" = latitude
-         ) %>%
+  mutate(
+    birds_present = ifelse(total_birds > 0, "Yes", "No"),
+    following_ship_cat = ifelse(any_following_ship, "Yes", "No"),
+    bird_interval_four = cut(total_birds, 
+                        breaks = c(-Inf, 10, 50, 100, Inf), 
+                        labels = c("0-10", "11-50", "51-100", "100+"),
+                        ordered_result = TRUE),
+    bird_interval_two = cut(total_birds,
+                            breaks = c(-Inf, 50, Inf),
+                            labels = c("0-50", "51+"),
+                            ordered_result = TRUE)
+  )
+```
+
+```{r}
+#| label: summary-tables 
+#| echo: true
+
+# overall observation summary. selecting core vars
+birds_clean %>%
+  select(`Bird Family` = species_family, `Bird count` = count, Season = season, 
+         `Cloud cover` = cloud_cover, Precipitation = precip_grouped, 
+         `Number of birds feeding` = feeding, `Number of birds flying past` = flying_past, 
+         `Number of birds following ships` = following_ship, 
+         `Sea state` = sea_state_description, Longitude = longitude, Latitude = latitude) %>%
   tbl_summary(
-    statistic = list(
-      all_continuous() ~ "{mean} ({sd})",
-      all_categorical() ~ "{n} ({p}%)"
-    ),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
     missing = "ifany"
   ) %>%
-    as_gt() %>%
+  as_gt() %>%
   gt::tab_caption("Table 1. Summary of bird observations")
 
-#write csv of cleaned data
-write_csv(df_clean, "birds_clean.csv")
+# session interval frequency
+session_data %>%
+  select(bird_interval_four) %>%
+  tbl_summary(
+    label = list(bird_interval_four ~ "Total Bird Count Interval (Session)"),
+    statistic = list(all_categorical() ~ "{n} ({p}%)")
+  ) %>%
+  modify_header(label = "**Interval**") %>% bold_labels()
+
+# observation interval frequency
+birds_clean %>%
+  select(species_bird_interval) %>%
+  tbl_summary(
+    label = list(species_bird_interval ~ "Total Bird Count Interval (Species Observation)"),
+    statistic = list(all_categorical() ~ "{n} ({p}%)")
+  ) %>%
+  modify_header(label = "**Interval**") %>% bold_labels()
 ```
 
 Our key outcome variable currently is bird count, which measures how many total birds an observer witnessed during an observation session. We are secondarily interested in looking at counts of birds doing specific activities, such as feeding, flying past, and following ships. Our key explanatory variables are season, longitude, latitude, precipitation, cloud cover, and sea state. We expect that the number of birds will vary dramatically depending on the season and location, but that poor weather will also affect bird count at a more granular level.
@@ -245,7 +283,157 @@ We created a new variable that categorized birds by family rather than species b
 | `latitude` | double | Decimal latitude (negative indicates Southern hemisphere) |
 :::
 
-# Data Visualization
+# Exploratory Data Analysis: Species & Observations
+
+```{r}
+#| label: eda-observations
+#| echo: true
+#| fig-width: 8
+#| fig-height: 6
+
+world_map <- map_data("world") # for plotting maps later
+
+# frequency of activities
+activity_cols <- c("feeding", "sitting_on_water", "sitting_on_ice", "sitting_on_ship", "in_hand", "flying_past", "accompanying", "following_ship", "naturally_feeding")
+
+birds_clean %>%
+  select(all_of(activity_cols)) %>%
+  pivot_longer(cols = everything(), names_to = "activity_type", values_to = "is_doing") %>%
+  filter(is_doing == TRUE) %>%
+  mutate(activity_type = str_to_title(str_replace_all(activity_type, "_", " "))) %>%
+  ggplot(aes(x = fct_infreq(activity_type))) +
+  geom_bar(fill = "red4", color = "black", alpha = 0.8) +
+  coord_flip() + 
+  theme_minimal() +
+  labs(title = "Frequency of Observed Bird Activities", x = "Activity Type", y = "Total Occurrences")
+
+# count intervals by species family
+ggplot(birds_clean %>% drop_na(species_family), aes(x = species_family, fill = species_bird_interval)) +
+  geom_bar(position = "fill", color = "black", linewidth = 0.2) +
+  scale_fill_brewer(palette = "YlOrRd", name = "Count Interval") +
+  theme_minimal() + coord_flip() +
+  labs(title = "Proportion of Count Intervals by Species Family", x = "Species Family", y = "Proportion")
+
+# count intervals by sea state
+ggplot(birds_clean %>% drop_na(sea_state_description), aes(x = sea_state_description, fill = species_bird_interval)) +
+  geom_bar(position = "fill", color = "black", linewidth = 0.2) +
+  scale_fill_brewer(palette = "YlOrRd", name = "Count Interval") +
+  theme_minimal() + coord_flip() +
+  labs(title = "Proportion of Count Intervals by Sea State", x = "Sea State", y = "Proportion")
+
+# spatial map faceted by species interval
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white", linewidth = 0.1) +
+  geom_point(data = birds_clean %>% drop_na(longitude, latitude), 
+             aes(x = longitude, y = latitude, color = species_bird_interval), size = 1, alpha = 0.5) +
+  scale_color_brewer(palette = "YlOrRd", name = "Count Interval") +
+  theme_minimal() +
+  facet_wrap(~ species_bird_interval, ncol = 2) + 
+  labs(title = "Spatial Distribution of Observations by Flock Size", x = "Longitude", y = "Latitude") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0)) +
+  theme(legend.position = "none")
+```
+
+
+
+
+# Exploratory Data Analysis: Session Level
+
+```{r}
+#| label: eda-sessions
+#| echo: true
+#| fig-width: 8
+#| fig-height: 6
+
+# total birds histogram
+ggplot(session_data, aes(x = total_birds)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Total Birds per Session", x = "Total Birds", y = "Frequency")
+
+# following ship by wind speed
+ggplot(session_data, aes(x = factor(wind_speed_class), fill = following_ship_cat)) +
+  geom_bar(position = "fill") +
+  theme_minimal() +
+  labs(title = "Proportion of 'Following Ship' Events by Wind Speed Class", x = "Wind Speed Class", y = "Proportion", fill = "Following Ship")
+
+# intervals by precip 
+ggplot(session_data %>% drop_na(precip_grouped), aes(x = precip_grouped, fill = bird_interval_four)) +
+  geom_bar(position = "fill", color = "black") +
+  scale_fill_brewer(palette = "YlOrRd", name = "Total Birds\nInterval") +
+  theme_minimal() + coord_flip() + 
+  labs(title = "Total Bird Intervals by Grouped Precipitation", x = "Precipitation Group", y = "Proportion of Sessions")
+
+# spatial map of intervals
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+  geom_point(data = session_data %>% arrange(bird_interval_four), 
+             aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
+  scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+
+# by season 
+ggplot(session_data, aes(x = season, fill = bird_interval)) +
+  geom_bar(position = "fill") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "YlOrRd") +
+  labs(title = "Proportion of Bird Count Intervals by Season",
+       x = "Season", y = "Proportion", fill = "Bird Count Interval")
+
+#by sea state
+ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_description, fill = bird_interval)) +
+  geom_bar(position = "fill", color = "black", size = 0.2) +
+  scale_fill_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  coord_flip() + 
+  labs(title = "Bird Count Intervals by Sea State",
+       x = "Sea State Description", 
+       y = "Proportion of Observations")
+
+
+# latitudinal (are some intervals only found south / north)
+ggplot(session_data, aes(x = bird_interval, y = latitude, fill = bird_interval)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  scale_fill_brewer(palette = "YlOrRd") +
+  theme_minimal() +
+  theme(legend.position = "none") + # Hide legend since x-axis has the info
+  labs(title = "Latitudinal Distribution of Bird Count Intervals",
+       x = "Bird Count Interval", 
+       y = "Latitude (Degrees)")
+```
+
+# Spatial Clustering
+
+
+```{r}
+#| label: dbscan clustering
+#| echo: true
+
+# extract coordinates 
+coords <- session_data %>% select(longitude, latitude)
+
+# determine the optimal eps (neighborhood radius) using a kNN distance plot
+# looking for the "knee" or "elbow" curve in this plot, we see that 3 appears to be an elbow in the plot. so we'll proceed with three
+#kNNdistplot(coords, k = 5)
+
+set.seed(244) # for reproducibility
+db_res <- dbscan(coords, eps = 3, minPts = 5) # run dbscan algorithm
+session_data$dbscan_cluster <- as.factor(db_res$cluster) # put cluster assignments in df 
+
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+  geom_point(data = session_data, aes(x = longitude, y = latitude, color = dbscan_cluster), size = 1.5, alpha = 0.8) +
+  theme_minimal() +
+  scale_color_viridis_d(option = "plasma", name = "Cluster\n(0 = Noise)") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0)) +
+  labs(title = "DBSCAN Clustering of Bird Observation Locations", x = "Longitude", y = "Latitude")
+
+```
+
+
+# Older Data Visualization
 
 ```{r}
 #| label: bar plot (not using)
@@ -335,7 +523,7 @@ elbow_df <- tibble(
 #        x = "Number of Clusters (k)",
 #        y = "Total Within-Cluster Sum of Squares (WCSS)")
 
-# it looks like three clusters is probably satisfactory
+# it looks like three clusters is probably satisfactory --- picked this based on the elbow in the elbow curve plot 
 
 ## now, do the k-means clustering
 kmeans_result <- kmeans(df_clean %>% select(longitude, latitude),
@@ -424,3 +612,6 @@ sea_state_box <- ggplot(df_sea_state,
 
 print(sea_state_box)
 ```
+
+
+
