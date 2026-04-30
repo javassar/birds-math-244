@@ -25,6 +25,8 @@ We noticed from EDA that the `count` variable was very right-skewed, and had a l
 library(tidyverse)
 library(caret) # will be needed for CV later
 library(pROC) # will be needed for logistic regression models
+library(rpart) #for decision tree
+library(rpart.plot) #to plot decision tree
 
 #read in the cleaned data
 data <- read_csv("birds_clean.csv")
@@ -55,6 +57,8 @@ session_data <- data %>%
     sea_state_description = first(sea_state_description),
     wind_description = first(wind_description),
     precipitation = first(precipitation),
+    season = first(season),
+    cloud_cover = first(cloud_cover),
     .groups = 'drop'
   ) %>%
   mutate( # also make birds interval 
@@ -79,7 +83,7 @@ ggplot(session_data %>% filter(total_birds < 1000), aes(x = as.numeric(total_bir
 
 ```
 
-Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. Since there were so many observations with no birds, we decided to make a new variable that transformed the bird count variable into a binary variable indicating if there were or were not birds spotted. Then, we could make a Logistic Regression to predict the appearance of birds. 
+Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. Since there were so many observations with no birds, we decided to make a new variable that transformed the bird count variable into a binary variable. Then, we could make a Logistic Regression model to predict the appearance of birds. We decided to transform the total number of birds variable in two ways: the first being `count` is greater than 1 or `count` is less than or equal to 1, and the second being `total_birds` is 0-50, or 51+. The first model uses the `df_logistic` dataset, and the second model uses the aggregated `session_data` set. 
 
 ```{r}
 #| label: bird appearance binary variable
@@ -127,7 +131,8 @@ ctrl <- trainControl(method = "cv",
 # train model
 lr_1 = train(
   form = birds ~ season + cloud_cover + sea_state_description +
-    precipitation + species_family + longitude + latitude,
+    precipitation + species_family + longitude + latitude +
+    feeding + flying_past + following_ship,
   data = train1,
   method = "glm",
   family = "binomial",
@@ -143,6 +148,14 @@ cm1
 # AUC
 roc1 <- roc(test1$birds, test1_prob$X0)
 auc(roc1)
+# plot curve
+ggroc(roc1, legacy.axes = TRUE) + #set axes to 1-specificity vs sensitivity
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") + #AUC = 0.5
+  labs(
+    title = "ROC Curve of Model 1",
+    x= "1 - specificity",
+    y= "sensitivity") + 
+  theme_minimal()
 ```
 ```{r}
 #| label: aggregated data model
@@ -156,8 +169,9 @@ lr2_data <- session_data %>%
                            bird_interval_two == "51+" ~ "X1")) %>%
   select(birds, latitude, longitude,
          sea_state_description, 
-         wind_description, precipitation) %>%
+         wind_description, precipitation, season, cloud_cover) %>%
   mutate(birds = factor(birds))
+#note: aggregated data is missing a lot of potential predictor variables
 
 # set seed
 set.seed(244)
@@ -186,9 +200,64 @@ test2_prob <- predict(lr_2, newdata=test2, type= "prob")
 cm2 <- confusionMatrix(data = test2_pred, reference=test2$birds)
 cm2
 # AUC
-roc2 <- roc(test2$birds, test2_prob$X0)
+roc2 <- roc(test2$birds, test2_prob$X1)
 auc(roc2)
+# plot curve
+ggroc(roc2, legacy.axes = TRUE) + #set axes to 1-specificity vs sensitivity
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") + #AUC = 0.5
+  labs(
+    title = "ROC Curve of Model 2",
+    x= "1 - specificity",
+    y= "sensitivity") + 
+  theme_minimal()
+```
+Based on these two logistic regression models, it appears that the model that separates the `birds` variable into `count` is greater than 1 and `count` is less than or equal to 1 (Model 1) performs slightly better (AUC_1 = 0.6384 vs AUC_2 = 0.5815). This indicates that Model 1 has a slightly better discrimination ability than Model 2, though neither is excellent. 
+
+To further examine our data, we decided to run a Decision Tree to classify the total birds into smaller intervals. 
+
+```{r}
+#| label: decision tree
+#| echo: false
+#| warning: false
+#| message: false
+
+# filter data for tree-making
+tree_data <- data %>%
+  mutate(birds_four = case_when(count <= 10 ~ "0-10",
+                                count <= 50 ~ "11-50",
+                                count <= 100 ~ "51-100",
+                                count > 100 ~ "100+")) %>%
+  mutate(birds_four = factor(birds_four)) %>%
+  select(birds_four,
+    season,
+    cloud_cover, precipitation,
+    sea_state_description,
+    longitude,
+    latitude,
+    wind_description
+  ) %>% 
+  mutate(cloud_cover = factor(cloud_cover, levels = c(
+    "clear", "partially cloudy", "overcast"
+  ))) %>%
+  mutate(sea_state_description = factor(sea_state_description, levels = c(
+    "calm, rippled", "smooth", "slight", "moderate", "rough", "very rough"
+  ))) %>%
+  mutate(wind_description = factor(wind_description))
+
+# set seed
+set.seed(244)
+# test/train sets
+test3_id <- sample(1:nrow(tree_data), size= nrow(tree_data)/2)
+train3 <- tree_data[test3_id,]
+test3 <- tree_data[-test3_id,]
+# grow decision tree
+bird_tree <- rpart(birds_four ~ ., data=test3, method="class", cp=0)
+#plot tree
+rpart.plot(bird_tree, box.palette="Blues")
+#test error
+test3_err <- predict(bird_tree, newdata=test3, type="class")
+table(test3_err, test3$birds_four)
+(924/11691)
 ```
 
-
-Since our `count` data was not Normal, we decided to do some ensemble methods and more flexible modeling. 
+The test error for the Decision Tree is 0.079, which is very low. Based on the confusion matrix, the tree is good at classifying the more common categories of 0-10 birds and 11-50 birds, which are also the two categories that indicate the smallest number of birds. This makes sense, as around half of the data reports numbers of birds between 0-50 and half 50+. 
