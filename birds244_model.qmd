@@ -27,6 +27,7 @@ library(caret) # will be needed for CV later
 library(pROC) # will be needed for logistic regression models
 library(rpart) #for decision tree
 library(rpart.plot) #to plot decision tree
+library(pheatmap) #for confusion matrix
 
 #read in the cleaned data
 data <- read_csv("birds_clean.csv")
@@ -250,12 +251,18 @@ train3 <- tree_data[test3_id,]
 test3 <- tree_data[-test3_id,]
 # grow decision tree
 bird_tree <- rpart(birds_four ~ ., data=test3, method="class", cp=0)
-#plot tree
+#plot tree & save as png
+png("bird_tree.png", width = 3000, height = 2000, res=300)
 rpart.plot(bird_tree, box.palette="Blues")
+dev.off()
 #test error
-test3_err <- predict(bird_tree, newdata=test3, type="class")
-table(test3_err, test3$birds_four)
-1- (10766/11688)
+test3_pred <- predict(bird_tree, newdata=test3, type="class")
+# confusion matrix
+cm3 <- table(test3_pred, test3$birds_four)
+cm3 <- unclass(cm3)
+names(cm3) <- paste("X", 1:4)
+pheatmap(cm3, display_number = TRUE, number_color="white", main="Confusion Matrix of Decision Tree")
+test3_error <- 1- (10766/11688)
 ```
 
-The test error for the Decision Tree is 0.079, which is very low. Based on the confusion matrix, the tree is good at classifying the more common categories of 0-10 birds and 11-50 birds, which are also the two categories that indicate the smallest number of birds. This makes sense, as around half of the data reports numbers of birds between 0-50 and half 50+. 
+The test error for the Decision Tree is 0.079, which is very low. Based on the confusion matrix, the tree is good at classifying the more common categories of 0-10 birds and 11-50 birds, which are also the two categories that indicate the smallest number of birds. This makes sense, as around half of the data reports numbers of birds between 0-10 and half 10+. 
