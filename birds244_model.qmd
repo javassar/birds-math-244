@@ -38,6 +38,43 @@ ggplot(data_smallcount, aes(x = count)) +
     x = "Bird Count"
   ) +
   theme_minimal()
+
+
+##3 aggregate records so total_birds is the total number of birds recorded in a given session, since currently "count" is total numbers of a specific species of birds recorded in a given session 
+session_data <- data %>%
+  group_by(record_id) %>%
+  summarize(
+    # calculate total birds seen during the entire observation session
+    total_birds = sum(count, na.rm = TRUE),
+    
+    # keep the spatial and environmental variables for the session
+    latitude = first(latitude),
+    longitude = first(longitude),
+    sea_state_description = first(sea_state_description),
+    wind_description = first(wind_description),
+    precipitation = first(precipitation),
+    .groups = 'drop'
+  ) %>%
+  mutate( # also make birds interval 
+    bird_interval_four = cut(total_birds,  # by four
+                        breaks = c(-Inf, 10, 50, 100, Inf), 
+                        labels = c("0-10", "11-50", "51-100", "100+"),
+                        ordered_result = TRUE),
+    bird_interval_two = cut(total_birds,  # by two (binary)
+                        breaks = c(-Inf, 50, Inf), 
+                        labels = c("0-50", "51+"),
+                        ordered_result = TRUE)
+  )
+
+#plot  aggregates
+ggplot(session_data %>% filter(total_birds < 1000), aes(x = as.numeric(total_birds))) + 
+  geom_histogram(binwidth = 10) +
+  labs(
+    title = "Bird Count",
+    x = "Bird Count"
+  ) +
+  theme_minimal()
+
 ```
 
 Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. Since there were so many observations with no birds, we decided to make a new variable that transformed the bird count variable into a binary variable indicating if there were or were not birds spotted. Then, we could make a Logistic Regression to predict the appearance of birds. 
