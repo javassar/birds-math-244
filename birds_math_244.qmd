@@ -357,7 +357,7 @@ ggplot(session_data, aes(x = factor(wind_speed_class), fill = following_ship_cat
   theme_minimal() +
   labs(title = "Proportion of 'Following Ship' Events by Wind Speed Class", x = "Wind Speed Class", y = "Proportion", fill = "Following Ship")
 
-# intervals by precip 
+# intervals by precipitation
 ggplot(session_data %>% drop_na(precip_grouped), aes(x = precip_grouped, fill = bird_interval_four)) +
   geom_bar(position = "fill", color = "black") +
   scale_fill_brewer(palette = "YlOrRd", name = "Total Birds\nInterval") +
@@ -375,7 +375,7 @@ ggplot() +
   coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
 
 # by season 
-ggplot(session_data, aes(x = season, fill = bird_interval)) +
+ggplot(session_data, aes(x = season, fill = bird_interval_four)) +
   geom_bar(position = "fill") +
   theme_minimal() +
   scale_fill_brewer(palette = "YlOrRd") +
@@ -383,7 +383,7 @@ ggplot(session_data, aes(x = season, fill = bird_interval)) +
        x = "Season", y = "Proportion", fill = "Bird Count Interval")
 
 #by sea state
-ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_description, fill = bird_interval)) +
+ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_description, fill = bird_interval_four)) +
   geom_bar(position = "fill", color = "black", size = 0.2) +
   scale_fill_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
   theme_minimal() +
@@ -394,7 +394,7 @@ ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_descri
 
 
 # latitudinal (are some intervals only found south / north)
-ggplot(session_data, aes(x = bird_interval, y = latitude, fill = bird_interval)) +
+ggplot(session_data, aes(x = bird_interval_four, y = latitude, fill = bird_interval_four)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
   scale_fill_brewer(palette = "YlOrRd") +
   theme_minimal() +
@@ -402,7 +402,55 @@ ggplot(session_data, aes(x = bird_interval, y = latitude, fill = bird_interval))
   labs(title = "Latitudinal Distribution of Bird Count Intervals",
        x = "Bird Count Interval", 
        y = "Latitude (Degrees)")
+
+
+
 ```
+
+```{r}
+ggplot() +
+  # 1. Base Map
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+  
+  # 2. Add the Filled Density Layer HERE (beneath the points)
+  stat_density_2d(data = session_data, 
+                  aes(x = longitude, y = latitude, fill = after_stat(level)), 
+                  geom = "polygon", alpha = 0.3, show.legend = FALSE) +
+  
+  # 3. Your Original Points
+  geom_point(data = session_data %>% arrange(bird_interval_four), 
+             aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
+  
+  # Optional: A nice color scale for the density fill (so it doesn't clash with YlOrRd)
+  scale_fill_viridis_c(option = "mako") +
+  
+  # Your Original Scales and Themes
+  scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+```
+```{r}
+ggplot() +
+  # 1. Base Map
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+  
+  # 2. Add the Contour Density Layer HERE
+  geom_density_2d(data = session_data, aes(x = longitude, y = latitude), 
+                  color = "blue", alpha = 0.5, linewidth = 0.5) +
+  
+  # 3. Your Original Points
+  geom_point(data = session_data %>% arrange(bird_interval_four), 
+             aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
+  
+  # Your Original Scales and Themes
+  scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+```
+
+
 
 # Spatial Clustering
 

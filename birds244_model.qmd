@@ -17,6 +17,7 @@ editor:
 # Further Exploration
 
 We noticed from EDA that the `count` variable was very right-skewed, and had a large range including regions with very sparse data. To examine this further, and to potentially determine if there was a range of the `count` data that could be used for prediction, we decided to look at the range from a count of 10 to the mean (51.9) plus one standard deviation (1616.5), which is 1668.4 birds. 
+
 ```{r}
 #| label: loading in the data
 #| echo: true
@@ -158,6 +159,7 @@ ggroc(roc1, legacy.axes = TRUE) + #set axes to 1-specificity vs sensitivity
     y= "sensitivity") + 
   theme_minimal()
 ```
+
 ```{r}
 #| label: aggregated data model
 #| echo: false
