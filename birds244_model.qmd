@@ -150,8 +150,44 @@ auc(roc1)
 #| message: false
 #| warning: false
 
-# code the bird_interval_two variable as a binary variable for logistic regression
+# code the bird_interval_two variable as a factor variable for logistic regression
+lr2_data <- session_data %>% 
+  mutate(birds = case_when(bird_interval_two == "0-50" ~ "X0",
+                           bird_interval_two == "51+" ~ "X1")) %>%
+  select(birds, latitude, longitude,
+         sea_state_description, 
+         wind_description, precipitation) %>%
+  mutate(birds = factor(birds))
 
+# set seed
+set.seed(244)
+# split into test/ train for CV
+test2_id <- sample(1:nrow(lr2_data), size= nrow(lr2_data) * .25)
+train2 <- lr2_data[-test2_id,]
+test2 <- lr2_data[test2_id,]
+# set up control for classification
+ctrl <- trainControl(method = "cv",
+                     number = 10,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+# train model
+lr_2 = train(
+  form = birds ~ .,
+  data = train2,
+  method = "glm",
+  family = "binomial",
+  metric = "ROC",
+  trControl = ctrl)
+lr_2
+# test model
+test2_pred <- predict(lr_2, newdata = test2)
+test2_prob <- predict(lr_2, newdata=test2, type= "prob")
+# make confusion matrix
+cm2 <- confusionMatrix(data = test2_pred, reference=test2$birds)
+cm2
+# AUC
+roc2 <- roc(test2$birds, test2_prob$X0)
+auc(roc2)
 ```
 
 
