@@ -233,16 +233,14 @@ tree_data <- data %>%
     cloud_cover, precipitation,
     sea_state_description,
     longitude,
-    latitude,
-    wind_description
+    latitude
   ) %>% 
   mutate(cloud_cover = factor(cloud_cover, levels = c(
     "clear", "partially cloudy", "overcast"
   ))) %>%
   mutate(sea_state_description = factor(sea_state_description, levels = c(
     "calm, rippled", "smooth", "slight", "moderate", "rough", "very rough"
-  ))) %>%
-  mutate(wind_description = factor(wind_description))
+  ))) 
 
 # set seed
 set.seed(244)
@@ -257,7 +255,7 @@ rpart.plot(bird_tree, box.palette="Blues")
 #test error
 test3_err <- predict(bird_tree, newdata=test3, type="class")
 table(test3_err, test3$birds_four)
-(924/11691)
+1- (10766/11688)
 ```
 
 The test error for the Decision Tree is 0.079, which is very low. Based on the confusion matrix, the tree is good at classifying the more common categories of 0-10 birds and 11-50 birds, which are also the two categories that indicate the smallest number of birds. This makes sense, as around half of the data reports numbers of birds between 0-50 and half 50+. 
