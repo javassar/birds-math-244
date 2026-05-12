@@ -125,7 +125,7 @@ session_data <- birds_clean %>%
     .groups = 'drop'
   ) %>%
   mutate(
-    birds_present = ifelse(total_birds > 0, "Yes", "No"),
+    birds_present = ifelse(total_birds > 1, "Yes", "No"),
     following_ship_cat = ifelse(any_following_ship, "Yes", "No"),
     bird_interval_four = cut(total_birds, 
                         breaks = c(-Inf, 10, 50, 100, Inf), 
@@ -152,6 +152,8 @@ This project explores bird sightings at sea using data from TidyTuesday (April 1
 
 ## Data Source & Context
 The data captures observations of birds at sea, climate conditions, and ship activity. We integrated four tables: `birds` (sightings), `ships` (sessions), `beaufort_scale` (wind), and `sea_states` (ocean conditions).
+
+Each row in our composite data frame records data on one species that an observer witnessed during a 10-minute observation period at a port. For example, there may be five rows in our data frame that share the same observation session ID; each row communicates the observations about a unique bird species during that session, and the aggregate of the five rows' observed bird counts is the total number of birds, regardless of species, observed during the 10-minute observation period. We explored observed bird counts per session both at the by-species level and at the overall session level.
 
 ## Key Variables
 - **Outcome:** Number of birds observed (often transformed into intervals or binary presence).
@@ -181,10 +183,14 @@ The data captures observations of birds at sea, climate conditions, and ship act
 We merged the separate data frames by identifier columns to form an initial data frame with 49,019 observations. 
 
 ### Data Cleaning
-We choice to exclude observations with missing data to ensure that our exploratory assessments were not distorted. We first removed any observations missing core variables (count, species, coordinates, time). Next, we performed an iterative process:
+We chose to exclude observations with missing data to ensure that our exploratory assessments were not distorted. We first removed any observations missing core variables (count, species, coordinates, time). Next, we performed an iterative process:
+
 1. Removed variables with > 60% missing data.
+
 2. Removed observations with > 60% missing variables.
+
 3. Removed variables with > 20% missing data.
+
 4. Removed observations with any remaining missing data.
 
 This left us with 23,382 observations and 40 variables.
@@ -194,9 +200,81 @@ This left us with 23,382 observations and 40 variables.
 - **Weather Grouping:** Collapsed rare weather events into broader categories ("None", "Rain/Showers", "Harsh Weather").
 - **Log Transformation:** Applied `log10(count + 1)` to address the extreme right-skew of bird counts, though we largely moved beyond this approach when possible to maintain interpretability.
 - **Categorization:** Created multi-level intervals (0-10, 11-50, etc.) for flock size prediction and binary dichtomizations (e.g., solo bird vs. flock and flock size less than or greater than 50 birds)
+- **Session-level aggregation:** Calculated the session-level total bird counts by, for each session, taking the aggregate of the counts of each observed species.
 
-## Modeling Strategy
-We focused on classification models to predict bird presence and flock sizes:
+```{r}
+#| label: tbl-flock-size
+#| layout-ncol: 2
+#| tbl-cap: "Distribution of Bird Count Intervals"
+#| echo: false 
+
+
+# observation interval frequency
+birds_clean %>%
+  select(species_bird_interval) %>%
+  tbl_summary(
+    label = list(species_bird_interval ~ "Bird Count Interval"),
+    statistic = list(all_categorical() ~ "{n} ({p}%)")
+  ) %>%
+ as_gt() %>%
+  gt::tab_caption("Distribution of By-Session and By-Species Flock Size Intervals")
+  
+# solo vs flock interval frequency
+session_data %>%
+  select(bird_interval_present) %>%
+  tbl_summary(
+    label = list(bird_interval_present ~ "Solo vs. Flock"),
+    statistic = list(all_categorical() ~ "{n} ({p}%)")
+  ) %>%
+    as_gt() %>%
+    gt::tab_caption("Distributions of By-Session Presence of Flock")
+
+```
+
+@tbl-flock-size demonstrates that the majority of bird count observations recorded less than ten birds but more than just one bird. 
+
+### Data Overview
+
+
+```{r}
+#| label: tbl-summary-table
+#| tbl-cap: Summary of bird observations 
+#| echo: false 
+
+# making table with all our main variables
+birds_clean %>%
+  select(`Bird Family` = species_family, `Bird count` = count, Season = season, 
+         `Cloud cover` = cloud_cover, Precipitation = precip_grouped, 
+         `Number of birds feeding` = feeding, `Number of birds flying past` = flying_past, 
+         `Number of birds following ships` = following_ship, 
+         `Sea state` = sea_state_description, Longitude = longitude, Latitude = latitude) %>%
+  tbl_summary(
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    missing = "ifany"
+  ) %>%
+  as_gt()
+
+```
+
+@tbl-summary-table conveys the overall composition of our data. Most birds were of the Albatross or Petrel/Shearwater/Prion families. Bird observations were relatively evenly distributed across seasons, but much more commonly appeared during partially cloudy days with no precipitation and a slight to moderate sea state. 
+
+## Analysis Strategy
+
+We focused on exploratory data analysis of and classification models that predict bird presence and flock sizes.
+
+```{r}
+#| label: fig-skew
+#| fig-cap: Distribution of bird counts per observation session. Observe the extreme right skew towards counts of around zero to two birds. 
+#| echo: false
+
+ggplot(session_data, aes(x = total_birds)) +
+  geom_histogram(bins = 30, fill = "red4") +
+  theme_minimal() +
+  labs(title = "Distribution of Total Birds per Session", x = "Total Birds", y = "Frequency")
+  
+```
+
+As observed in @fig-skew, our data were extremely skewed. This motivated our use of the intervals that we engineered for EDA and the following classification models:
 
 1.  **Logistic Regression (Model 1):** Solo bird vs. Flock (presence of >1 bird).
 
@@ -213,6 +291,7 @@ We focused on classification models to predict bird presence and flock sizes:
 ```{r}
 #| label: fig-activity-plot
 #| fig-cap: "Frequency of Observed Bird Activities"
+#| echo: false
 activity_cols <- c("feeding", "sitting_on_water", "sitting_on_ice", "sitting_on_ship", "in_hand", "flying_past", "accompanying", "following_ship", "naturally_feeding")
 
 birds_clean %>%
@@ -221,19 +300,23 @@ birds_clean %>%
   filter(is_doing == TRUE) %>%
   mutate(activity_type = str_to_title(str_replace_all(activity_type, "_", " "))) %>%
   ggplot(aes(x = fct_infreq(activity_type))) +
-  geom_bar(fill = "red4", color = "black", alpha = 0.8) +
+  geom_bar(fill = "red4") +
   coord_flip() + 
   theme_minimal() +
   labs(title = "Frequency of Observed Bird Activities", x = "Activity Type", y = "Total Occurrences")
 ```
 
-As observed in @fig-activity-plot, the most frequent bird activities observed include flying past a ship and following the vessel. As we lost most to all of our ship data during data cleaning, however, we felt there was little interpretable incentive to focus in on these activities. Hence, we maintained a broad scope of number of birds. 
+As observed in @fig-activity-plot, the most frequent bird activities observed include flying past a ship and following the vessel. As we lost most to all of our ship data during data cleaning, we felt there was little interpretable incentive to focus in on these activities. Hence, we maintained a focus on treating total number of birds observed as our outcome of interest. 
 
-### Spatial Distribution
+### Geographic Distribution
+
+We explored geographic distribution of bird observations in the interest of finding a potential relationship between location and flock size.
 
 ```{r}
 #| label: fig-geographic-map
-#| fig-cap: "Figure 2. Geographic Distribution of Bird Count Intervals"
+#| fig-cap: "Geographic Distribution of Bird Count Intervals"
+#| echo: false
+
 ggplot() +
   geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
   geom_point(data = session_data %>% arrange(bird_interval_four), 
@@ -248,21 +331,23 @@ Sightings of larger flocks appear to be highly clustered, as observed in @fig-ge
 
 ```{r}
 #| label: fig-observation-density
-#| fig-cap: "Figure 3. Spatial Density of Observations"
+#| fig-cap: "Spatial Density of Observations"
+#| echo: false
 ggplot() +
   geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray") +
-  geom_density_2d(data = birds_clean, aes(x = longitude, y = latitude), color = "blue") +
+  geom_density_2d(data = birds_clean, aes(x = longitude, y = latitude), color = "red4") +
+    labs(title = "Geographic Density of Observation Sessions", x = "Longitude", y = "Latitude") +
   theme_minimal() + coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
 ```
 
 @fig-observation-density demonstrates that the density of observations in the data align with the density of larger flock observations, which raises the question of whether geographic distribution is providing meaningful information in this investigation.
 
-
-#### Clustering Analysis (DBSCAN)
-
 ```{r}
 #| label: fig-dbscan-clusters
-#| fig-cap: "Figure 5. DBSCAN Clustering of Sightings"
+#| fig-cap: "DBSCAN Clustering of Sightings"
+#| echo: false
+
+
 coords <- session_data %>% select(longitude, latitude)
 db_res <- dbscan(coords, eps = 3, minPts = 5)
 session_data$cluster <- as.factor(db_res$cluster)
@@ -271,17 +356,19 @@ ggplot() +
   geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray") +
   geom_point(data = session_data, aes(x = longitude, y = latitude, color = cluster), size = 1) +
   scale_color_viridis_d(name = "Cluster") +
+  labs(title = "DBSCAN Geographic Clusters of Bird Count Intervals", x = "Longitude", y = "Latitude") +
   theme_minimal() + coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
 ```
 
 We also used DBSCAN ($\epsilon = 3$, $minPts = 5$) to identify high-density sighting regions. As seen in @fig-dbscan-clusters, the clustering heavily reflects the spatial concentration of observation effort.
 
 
-### Latitudinal Trends
-
 ```{r}
 #| label: fig-latitude-boxplot
-#| fig-cap: "Figure 4. Latitudinal Distribution of Bird Count Intervals"
+#| fig-cap: "Latitudinal Distribution of Bird Count Intervals"
+#| echo: false
+
+
 ggplot(session_data, aes(x = bird_interval_four, y = latitude, fill = bird_interval_four)) +
   geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
   scale_fill_brewer(palette = "YlOrRd") +
@@ -293,6 +380,50 @@ ggplot(session_data, aes(x = bird_interval_four, y = latitude, fill = bird_inter
 ```
 
 We examined whether certain flock sizes were more common at specific latitudes. @fig-latitude-boxplot suggests that while most sightings occur in temperate southern latitudes, larger flocks are distributed across a similar latitudinal range as smaller sightings.
+
+Overall, larger flock sizes appear to occur around Southern Australia and New Zealand, but we cannot confidently state that these trends reflect true patterns in bird behavior due to the geographic distribution of data collection. 
+
+### Climate
+
+We explored various climate measures that were available to us to observe their potential relationships with observed bird counts. 
+
+```{r}
+#| label: fig-season
+#| echo: false
+#| fig-cap: "Proportion of bird count intervals by season. Flock sizes may be slightly larger around spring and winter seasons."
+
+
+# by season 
+ggplot(session_data, aes(x = season, fill = bird_interval_four)) +
+  geom_bar(position = "fill") +
+  theme_minimal() +
+  coord_flip() + 
+  scale_fill_brewer(palette = "YlOrRd") + # fun color palette lol 
+  labs(title = "Proportion of Bird Count Intervals by Season",
+       x = "Season", y = "Proportion", fill = "Bird Count Interval")
+```
+
+As seen in @fig-season, slightly larger flock sizes may be observed more frequently in the spring and winter, indicating that season could be a useful metric for modeling bird counts. 
+
+```{r}
+#| label: fig-sea
+#| echo: false
+#| fig-cap: Proportion of bird count intervals by sea state. With sample size of each sea state in mind, proportions appear relatively even. 
+#| message: false
+#| warning: false
+
+#by sea state
+ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_description, fill = bird_interval_four)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  coord_flip() + 
+  labs(title = "Bird Count Intervals by Sea State",
+       x = "Sea State Description", 
+       y = "Proportion of Observations")
+```
+
+@fig-sea illustrates that, bar the single observation for a smooth sea state, bird counts were roughly similar across sea states. However, there is a slight intuitive increase in larger flock sizes when sea states are calmer, compared to very rough. 
 
 ## Modeling Results
 
@@ -377,6 +508,7 @@ The decision tree classifies bird counts into four intervals (0-10, 11-50, 51-10
 ```{r}
 #| label: fig-decision-tree-viz
 #| fig-cap: "Decision Tree for Flock Size Intervals"
+#| echo: false
 tree_data <- birds_clean %>%
   mutate(birds_four = case_when(count <= 10 ~ "0-10",
                                 count <= 50 ~ "11-50",
@@ -413,3 +545,4 @@ Though this tree has a high success rate, it achieves it through the rather bana
 - **Temporal Trends:** Comparing this historical data to more recent observations from the Sea Bird Tracking Database.
 - **Global Expansion:** Expanding the geographic area to include the Northern hemisphere to see if these ecological relationships hold globally.
 - **Advanced Modeling:** Exploring more non-linear or ensemble methods to continue improving models of the interactions between weather and bird behavior.
+- **Migration Patterns:** Part of our interest in looking at geographic distributions and seasonality was the possibility of piecing together the migration patterns of birds in this region of the world; however, our data were so skewed and limited in interpretability that we were unable to truly explore this. Future work may seek a more robust data set to analyze migration patterns more closely.

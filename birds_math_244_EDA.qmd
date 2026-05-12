@@ -16,7 +16,7 @@ editor:
 
 # Exploring the data
 
-We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. Each observation communicates the data that an observer witnessed during a 10-minute period at a port.
+We are looking at bird sightings at sea, which comes from TidyTuesday at https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-04-14. Each row in our data frame records data on one species that an observer witnessed during a 10-minute observation period at a port. For example, there may be five rows in our data frame, all with the same record ID; each row communicates the observations about a unique bird species during that session, and the aggregate of the five rows' observed bird counts is the total number of birds, regardless of species, observed during the 10-minute observation period. 
 
 ```{r}
 #| label: loading in the data
@@ -285,6 +285,8 @@ We created a new variable that categorized birds by family rather than species b
 
 # Exploratory Data Analysis: Species & Observations
 
+First, we explored relationships based on the observations as they appear in our data frame, meaning we did not aggregate total bird counts based on record ID, and rather looked at results on a by-species level. 
+
 ```{r}
 #| label: eda-observations
 #| echo: true
@@ -338,6 +340,8 @@ ggplot() +
 
 
 # Exploratory Data Analysis: Session Level
+
+We also explored relationships based on total bird count within an observation session. 
 
 ```{r}
 #| label: eda-sessions
@@ -408,42 +412,50 @@ ggplot(session_data, aes(x = bird_interval_four, y = latitude, fill = bird_inter
 ```
 
 ```{r}
+#| label: geographic distribution of flock sizes with density underlay
+#| include: false  
+# hard to see density underlay
+
 ggplot() +
-  # 1. Base Map
+  # base map
   geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
   
-  # 2. Add the Filled Density Layer HERE (beneath the points)
+  # add the filled density layer
   stat_density_2d(data = session_data, 
                   aes(x = longitude, y = latitude, fill = after_stat(level)), 
                   geom = "polygon", alpha = 0.3, show.legend = FALSE) +
   
-  # 3. Your Original Points
+  # the original points
   geom_point(data = session_data %>% arrange(bird_interval_four), 
              aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
   
-  # Optional: A nice color scale for the density fill (so it doesn't clash with YlOrRd)
+  # color scale for the density fill
   scale_fill_viridis_c(option = "mako") +
   
-  # Your Original Scales and Themes
+  # original scale and theme 
   scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
   theme_minimal() +
   labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
   coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+
 ```
 ```{r}
+#| label: geographic distribution of flock sizes with another type of density underlay
+#| include: false  
+# also hard to see
+
 ggplot() +
-  # 1. Base Map
+  # vase Map
   geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
   
-  # 2. Add the Contour Density Layer HERE
+  # add the contour density layer
   geom_density_2d(data = session_data, aes(x = longitude, y = latitude), 
                   color = "blue", alpha = 0.5, linewidth = 0.5) +
   
-  # 3. Your Original Points
+  # the original geographic dist points
   geom_point(data = session_data %>% arrange(bird_interval_four), 
              aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
   
-  # Your Original Scales and Themes
   scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
   theme_minimal() +
   labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
