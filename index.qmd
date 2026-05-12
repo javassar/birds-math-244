@@ -1,5 +1,415 @@
 ---
-title: "Home"
+title: "Bird Sightings at Sea: Comprehensive Analysis and Predictive Modeling"
+author: "Sydney Kahn & Jacqueline Adelmann"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    theme: cosmo
+    page-layout: full
+execute:
+  echo: false
+  warning: false
+  message: false
 ---
 
-This is our website!!!
+```{r}
+#| label: setup-and-comprehensive-processing
+#| include: false
+
+# load necessary libraries
+library(tidyverse)
+library(gtsummary)
+library(maps)
+library(dbscan)
+library(caret)
+library(pROC)
+library(rpart)
+library(rpart.plot)
+library(pheatmap)
+
+# load data from tidytuesday
+tuesdata <- tidytuesdayR::tt_load('2026-04-14')
+
+beaufort_scale <- tuesdata$beaufort_scale
+birds <- tuesdata$birds
+sea_states <- tuesdata$sea_states
+ships <- tuesdata$ships
+
+# merge ship and sea data 
+ships <- ships %>%
+  left_join(beaufort_scale, by = "wind_speed_class") %>%
+  left_join(sea_states, by = "sea_state_class") %>%
+  mutate(date = as.Date(date),
+         year = year(date),
+         month = month(date))
+
+# merge birds with ship and sea data
+df <- birds %>%
+  left_join(ships, by = "record_id")
+
+# data cleaning: iterative process to remove missing data
+# we chose to exclude observations with missing data to ensure assessments weren't distorted
+df_clean <- df %>%
+  filter(!is.na(count)) %>%
+  filter(!is.na(latitude)) %>%
+  filter(!is.na(longitude)) %>%
+  filter(!is.na(year)) %>%
+  filter(!is.na(month)) %>%
+  filter(!is.na(species_common_name)) %>% 
+  select(where(~ mean(is.na(.)) <= 0.6)) %>% 
+  filter(rowMeans(is.na(.)) <= 0.6) %>%
+  select(where(~ mean(is.na(.)) <= 0.2)) %>%
+  filter(rowMeans(is.na(.)) <= 0.0) 
+
+# feature engineering: simplify species and group families
+# individual species were often observed too few times for statistical utility
+df_clean <- df_clean %>%
+  group_by(species_common_name) %>%
+  mutate(species_count = n()) %>%
+  ungroup() %>%
+  mutate(species_simplified = case_when(
+    species_count/nrow(df_clean) >= 0.01 ~ species_common_name,
+    TRUE ~ "other"
+  )) %>%
+  select(-species_count)
+
+# define bird families and environmental groupings
+birds_clean <- df_clean %>%
+  mutate(species_family = case_when(
+    str_detect(species_common_name, "albatross|mollymawk") ~ "Albatross",
+    str_detect(species_common_name, "petrel|shearwater|prion|fulmar|diving-petrel") ~ "Petrel/Shearwater/Prion",
+    str_detect(species_common_name, "gull|tern|noddy") ~ "Gull/Tern",
+    str_detect(species_common_name, "skua|jaeger") ~ "Skua/Jaeger",
+    str_detect(species_common_name, "penguin") ~ "Penguin",
+    str_detect(species_common_name, "gannet|booby") ~ "Gannet/Booby",
+    str_detect(species_common_name, "cormorant|shag") ~ "Cormorant/Shag",
+    str_detect(species_common_name, "frigatebird|tropicbird") ~ "Frigatebird/Tropicbird",
+    TRUE ~ "Unidentified/Other"
+  ),
+    species_family = factor(species_family, levels = c("Albatross", "Petrel/Shearwater/Prion", "Gull/Tern", "Skua/Jaeger", "Penguin", "Gannet/Booby", "Cormorant/Shag", "Frigatebird/Tropicbird", "Unidentified/Other")),
+    log_count = log10(count + 1),
+    species_bird_interval = cut(count, 
+                                breaks = c(-Inf, 10, 50, 100, Inf), 
+                                labels = c("0-10", "11-50", "51-100", "100+"),
+                                ordered_result = TRUE),
+    precip_grouped = case_when(
+      precipitation == "none" ~ "None",
+      precipitation %in% c("rain", "showers", "drizzle") ~ "Rain/Showers",
+      precipitation %in% c("continuous snow", "snow showers", "fog", "squalls") ~ "Harsh Weather",
+      TRUE ~ "Unknown"
+    ),
+    precip_grouped = factor(precip_grouped, levels = c("None", "Rain/Showers", "Harsh Weather", "Unknown")),
+    season = str_to_title(season),
+    precipitation = str_to_title(precipitation),
+    cloud_cover = str_to_title(cloud_cover),
+    sea_state_description = str_to_title(sea_state_description)
+  ) 
+
+# aggregate data to the session level
+session_data <- birds_clean %>%
+  group_by(record_id) %>%
+  summarize(
+    total_birds = sum(count, na.rm = TRUE),
+    any_following_ship = any(following_ship == TRUE, na.rm = TRUE),
+    latitude = first(latitude),
+    longitude = first(longitude),
+    season = first(season),
+    cloud_cover = first(cloud_cover),
+    sea_state_description = first(sea_state_description),
+    wind_description = first(wind_description),
+    wind_speed_class = first(wind_speed_class),
+    precipitation = first(precipitation),
+    precip_grouped = first(precip_grouped),
+    .groups = 'drop'
+  ) %>%
+  mutate(
+    birds_present = ifelse(total_birds > 0, "Yes", "No"),
+    following_ship_cat = ifelse(any_following_ship, "Yes", "No"),
+    bird_interval_four = cut(total_birds, 
+                        breaks = c(-Inf, 10, 50, 100, Inf), 
+                        labels = c("0-10", "11-50", "51-100", "100+"),
+                        ordered_result = TRUE),
+    bird_interval_two = cut(total_birds,
+                            breaks = c(-Inf, 50, Inf),
+                            labels = c("0-50", "51+"),
+                            ordered_result = TRUE),
+    bird_interval_present = cut(total_birds,
+                            breaks = c(-Inf, 1, Inf),
+                            labels = c("Solo bird", "Flock (2+ Birds)"),
+                            ordered_result = TRUE)
+  )
+
+# define variables for mapping
+world_map <- map_data("world")
+```
+
+# Introduction/Data
+
+## Project Overview
+This project explores bird sightings at sea using data from TidyTuesday (April 14, 2026). Each observation communicates the data that an observer witnessed during a 10-minute period at a port. Our goal is to understand the geographic distribution of bird sightings and predict flock sizes based on environmental factors like climate and location.
+
+## Data Source & Context
+The data captures observations of birds at sea, climate conditions, and ship activity. We integrated four tables: `birds` (sightings), `ships` (sessions), `beaufort_scale` (wind), and `sea_states` (ocean conditions).
+
+## Key Variables
+- **Outcome:** Number of birds observed (often transformed into intervals or binary presence).
+- **Predictors:** Southern hemisphere season, longitude, latitude, precipitation, cloud cover, and sea state.
+
+::: {.callout-note collapse="false"}
+## Codebook
+
+| Variable | Type | Description |
+|------------------|------------------|-------------------------------------|
+| `species_family` | character | Bird family, created by grouping species |
+| `count` | integer | Number of birds counted in the observation |
+| `feeding` | logical | Birds observed feeding |
+| `flying_past` | logical | Birds observed flying past the ship |
+| `following_ship` | logical | Birds observed following the ship |
+| `cloud_cover` | ordered | "Clear", "Partially Cloudy" or "Overcast" |
+| `season` | ordered | Southern hemisphere season |
+| `precipitation` | factor | Precipitation type (Rain, Snow, Fog, etc.) |
+| `sea_state_description` | ordered | Description of sea state (Calm to Very Rough) |
+| `longitude` | double | Decimal longitude |
+| `latitude` | double | Decimal latitude |
+:::
+
+# Methodology
+
+## Data Wrangling and Transformation
+We merged the separate data frames by identifier columns to form an initial data frame with 49,019 observations. 
+
+### Data Cleaning
+We choice to exclude observations with missing data to ensure that our exploratory assessments were not distorted. We first removed any observations missing core variables (count, species, coordinates, time). Next, we performed an iterative process:
+1. Removed variables with > 60% missing data.
+2. Removed observations with > 60% missing variables.
+3. Removed variables with > 20% missing data.
+4. Removed observations with any remaining missing data.
+
+This left us with 23,382 observations and 40 variables.
+
+### Feature Engineering
+- **Species Family:** Grouped individual species into families (e.g., Albatross, Penguin) to ensure statistical utility.
+- **Weather Grouping:** Collapsed rare weather events into broader categories ("None", "Rain/Showers", "Harsh Weather").
+- **Log Transformation:** Applied `log10(count + 1)` to address the extreme right-skew of bird counts, though we largely moved beyond this approach when possible to maintain interpretability.
+- **Categorization:** Created multi-level intervals (0-10, 11-50, etc.) for flock size prediction and binary dichtomizations (e.g., solo bird vs. flock and flock size less than or greater than 50 birds)
+
+## Modeling Strategy
+We focused on classification models to predict bird presence and flock sizes:
+
+1.  **Logistic Regression (Model 1):** Solo bird vs. Flock (presence of >1 bird).
+
+2.  **Logistic Regression (Model 2):** Large flocks (>50 birds) using session-level aggregates.
+
+3.  **Decision Tree:** Multi-class classification of flock size intervals.
+
+# Results
+
+## Exploratory Data Analysis
+
+### Bird Activity and Distribution
+
+```{r}
+#| label: fig-activity-plot
+#| fig-cap: "Frequency of Observed Bird Activities"
+activity_cols <- c("feeding", "sitting_on_water", "sitting_on_ice", "sitting_on_ship", "in_hand", "flying_past", "accompanying", "following_ship", "naturally_feeding")
+
+birds_clean %>%
+  select(all_of(activity_cols)) %>%
+  pivot_longer(cols = everything(), names_to = "activity_type", values_to = "is_doing") %>%
+  filter(is_doing == TRUE) %>%
+  mutate(activity_type = str_to_title(str_replace_all(activity_type, "_", " "))) %>%
+  ggplot(aes(x = fct_infreq(activity_type))) +
+  geom_bar(fill = "red4", color = "black", alpha = 0.8) +
+  coord_flip() + 
+  theme_minimal() +
+  labs(title = "Frequency of Observed Bird Activities", x = "Activity Type", y = "Total Occurrences")
+```
+
+As observed in @fig-activity-plot, the most frequent bird activities observed include flying past a ship and following the vessel. As we lost most to all of our ship data during data cleaning, however, we felt there was little interpretable incentive to focus in on these activities. Hence, we maintained a broad scope of number of birds. 
+
+### Spatial Distribution
+
+```{r}
+#| label: fig-geographic-map
+#| fig-cap: "Figure 2. Geographic Distribution of Bird Count Intervals"
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray", color = "white") +
+  geom_point(data = session_data %>% arrange(bird_interval_four), 
+             aes(x = longitude, y = latitude, color = bird_interval_four), size = 1.5, alpha = 0.8) +
+  scale_color_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
+  theme_minimal() +
+  labs(title = "Geographic Distribution of Bird Count Intervals", x = "Longitude", y = "Latitude") +
+  coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+```
+
+Sightings of larger flocks appear to be highly clustered, as observed in @fig-geographic-map; however, this clustering may correlate with the clustering of observation locations.
+
+```{r}
+#| label: fig-observation-density
+#| fig-cap: "Figure 3. Spatial Density of Observations"
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray") +
+  geom_density_2d(data = birds_clean, aes(x = longitude, y = latitude), color = "blue") +
+  theme_minimal() + coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+```
+
+@fig-observation-density demonstrates that the density of observations in the data align with the density of larger flock observations, which raises the question of whether geographic distribution is providing meaningful information in this investigation.
+
+
+#### Clustering Analysis (DBSCAN)
+
+```{r}
+#| label: fig-dbscan-clusters
+#| fig-cap: "Figure 5. DBSCAN Clustering of Sightings"
+coords <- session_data %>% select(longitude, latitude)
+db_res <- dbscan(coords, eps = 3, minPts = 5)
+session_data$cluster <- as.factor(db_res$cluster)
+
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "lightgray") +
+  geom_point(data = session_data, aes(x = longitude, y = latitude, color = cluster), size = 1) +
+  scale_color_viridis_d(name = "Cluster") +
+  theme_minimal() + coord_quickmap(xlim = c(40, 200), ylim = c(-90, 0))
+```
+
+We also used DBSCAN ($\epsilon = 3$, $minPts = 5$) to identify high-density sighting regions. As seen in @fig-dbscan-clusters, the clustering heavily reflects the spatial concentration of observation effort.
+
+
+### Latitudinal Trends
+
+```{r}
+#| label: fig-latitude-boxplot
+#| fig-cap: "Figure 4. Latitudinal Distribution of Bird Count Intervals"
+ggplot(session_data, aes(x = bird_interval_four, y = latitude, fill = bird_interval_four)) +
+  geom_boxplot(alpha = 0.7, outlier.alpha = 0.3) +
+  scale_fill_brewer(palette = "YlOrRd") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Latitudinal Distribution of Bird Count Intervals",
+       x = "Bird Count Interval", 
+       y = "Latitude (Degrees)")
+```
+
+We examined whether certain flock sizes were more common at specific latitudes. @fig-latitude-boxplot suggests that while most sightings occur in temperate southern latitudes, larger flocks are distributed across a similar latitudinal range as smaller sightings.
+
+## Modeling Results
+
+### Logistic Regression Comparison
+
+We compared two logistic regression models. **Model 1** predicted bird presence (count > 1), while **Model 2** predicted large flocks (>50 birds).
+
+```{r}
+#| label: fig-modeling-comparison
+#| layout-ncol: 2
+#| fig-cap: "ROC Curves. Model 1 (left) models presence of a flock vs. a single bird. Model 2 (right) models size of flock (>50 birds)"
+
+# model 1 processing
+df_logistic <- birds_clean %>%
+  mutate(birds = case_when(count > 1 ~ "X1",
+                           count <= 1 ~ "X0")) %>%
+  select(species_family, birds, season, cloud_cover, precipitation,
+         feeding, flying_past, following_ship, sea_state_description,
+         longitude, latitude) %>%
+  mutate(birds = factor(birds))
+
+set.seed(244)
+test1_id <- sample(1:nrow(df_logistic), size= nrow(df_logistic) * .25)
+train1 <- df_logistic[-test1_id,]
+test1 <- df_logistic[test1_id,]
+ctrl <- trainControl(method = "cv", number = 10, classProbs = TRUE, summaryFunction = twoClassSummary)
+
+lr_1 = train(
+  form = birds ~ season + cloud_cover + sea_state_description +
+    precipitation + species_family + longitude + latitude +
+    feeding + flying_past + following_ship,
+  data = train1,
+  method = "glm",
+  family = "binomial",
+  metric = "ROC",
+  trControl = ctrl)
+
+test1_prob <- predict(lr_1, newdata=test1, type= "prob")
+roc1 <- roc(test1$birds, test1_prob$X0)
+
+ggroc(roc1, legacy.axes = TRUE) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "ROC Curve: Model 1", x= "1 - Specificity", y= "Sensitivity") + 
+  theme_minimal()
+
+# model 2 processing
+lr2_data <- session_data %>% 
+  mutate(birds = case_when(bird_interval_two == "0-50" ~ "X0",
+                           bird_interval_two == "51+" ~ "X1")) %>%
+  select(birds, latitude, longitude, sea_state_description, 
+         wind_description, precipitation, season, cloud_cover) %>%
+  mutate(birds = factor(birds))
+
+set.seed(244)
+test2_id <- sample(1:nrow(lr2_data), size= nrow(lr2_data) * .25)
+train2 <- lr2_data[-test2_id,]
+test2 <- lr2_data[test2_id,]
+
+lr_2 = train(
+  form = birds ~ .,
+  data = train2,
+  method = "glm",
+  family = "binomial",
+  metric = "ROC",
+  trControl = ctrl)
+
+test2_prob <- predict(lr_2, newdata=test2, type= "prob")
+roc2 <- roc(test2$birds, test2_prob$X1)
+
+ggroc(roc2, legacy.axes = TRUE) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  labs(title = "ROC Curve: Model 2", x= "1 - Specificity", y= "Sensitivity") + 
+  theme_minimal()
+```
+
+Based on these results (@fig-modeling-comparison), **Model 1** (AUC = 0.6384) performs slightly better than **Model 2** (AUC = 0.5815). This indicates that the environmental and spatial factors used in this study are better at discriminating between solo birds and small groups than they are at identifying very large flocks.
+
+### Decision Tree Classification
+
+The decision tree classifies bird counts into four intervals (0-10, 11-50, 51-100, 100+). The model achieved a high accuracy (92.1%), largely by correctly identifying the most common small-flock categories.
+
+```{r}
+#| label: fig-decision-tree-viz
+#| fig-cap: "Decision Tree for Flock Size Intervals"
+tree_data <- birds_clean %>%
+  mutate(birds_four = case_when(count <= 10 ~ "0-10",
+                                count <= 50 ~ "11-50",
+                                count <= 100 ~ "51-100",
+                                count > 100 ~ "100+")) %>%
+  mutate(birds_four = factor(birds_four)) %>%
+  select(birds_four, season, cloud_cover, precipitation,
+         sea_state_description, longitude, latitude) %>% 
+  mutate(cloud_cover = factor(cloud_cover, levels = c("Clear", "Partially Cloudy", "Overcast")),
+         sea_state_description = factor(sea_state_description, levels = c("Calm, Rippled", "Smooth", "Slight", "Moderate", "Rough", "Very Rough"))) 
+
+set.seed(244)
+test3_id <- sample(1:nrow(tree_data), size= nrow(tree_data)/2)
+train3 <- tree_data[test3_id,]
+test3 <- tree_data[-test3_id,]
+
+bird_tree <- rpart(birds_four ~ ., data=test3, method="class", cp=0)
+rpart.plot(bird_tree, box.palette="Blues")
+```
+
+The tree is particularly effective at classifying the 0-10 and 11-50 bird categories, which represent the bulk of the observations (@fig-decision-tree-viz). The test error was approximately 0.079, indicating strong performance for these common intervals. 
+
+Though this tree has a high success rate, it achieves it through the rather banal approach of classifying nearly every (or is it literally every?) observation as falling within the 0-10 bird interval, and thus it does not seem to truly discriminate between the two flocks more than it simply can bet on flock size being small often enough that it can classify a flock size as small every time. \[i worded this poorly\]
+
+# Discussion
+
+## Conclusions
+- **Skewness:** Bird counts are extremely right-skewed. The large range and sparse data in high-count regions make binary or interval classification more robust than regression, but still very limited.
+- **Geography:** Sightings are highly clustered spatially, but this density likely reflects observation locations rather than true flock size trends.
+- **Environment:** Climate factors like cloud cover, sea state, and precipitation may play a role in bird presence, but the moderate AUC (~0.64) in our models suggests significant variance remains unexplained.
+- **Model Performance:** Model 1 (Presence vs Solo) outperformed Model 2 (Large flocks), suggesting environmental predictors are more useful for general presence than for identifying specific high-intensity flocking events. 
+
+## Future Work
+- **Temporal Trends:** Comparing this historical data to more recent observations from the Sea Bird Tracking Database.
+- **Global Expansion:** Expanding the geographic area to include the Northern hemisphere to see if these ecological relationships hold globally.
+- **Advanced Modeling:** Exploring more non-linear or ensemble methods to continue improving models of the interactions between weather and bird behavior.
