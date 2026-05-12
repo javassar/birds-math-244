@@ -1,6 +1,6 @@
 ---
 title: "Bird Sightings at Sea: Comprehensive Analysis and Predictive Modeling"
-author: "Sydney Kahn & Jacqueline Adelmann"
+author: "The Robins: Sydney Kahn & Jacqueline Adelmann"
 format: 
   html:
     toc: true
