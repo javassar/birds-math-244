@@ -6,8 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Sydney Kahn &amp; Jacqueline Adelmann">
 
-<title>Bird Sightings at Sea - MATH 244: Intermediate Data Science Project</title>
+<title>Bird Sightings at Sea - Bird Sightings at Sea: Comprehensive Analysis and Predictive Modeling</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -67,6 +68,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -104,24 +134,70 @@ ul.task-list li input[type="checkbox"] {
     </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#introductiondata" id="toc-introductiondata" class="nav-link active" data-scroll-target="#introductiondata">Introduction/Data</a>
+  <ul class="collapse">
+  <li><a href="#project-overview" id="toc-project-overview" class="nav-link" data-scroll-target="#project-overview">Project Overview</a></li>
+  <li><a href="#data-source-context" id="toc-data-source-context" class="nav-link" data-scroll-target="#data-source-context">Data Source &amp; Context</a></li>
+  <li><a href="#key-variables" id="toc-key-variables" class="nav-link" data-scroll-target="#key-variables">Key Variables</a></li>
+  </ul></li>
+  <li><a href="#methodology" id="toc-methodology" class="nav-link" data-scroll-target="#methodology">Methodology</a>
+  <ul class="collapse">
+  <li><a href="#data-wrangling-and-transformation" id="toc-data-wrangling-and-transformation" class="nav-link" data-scroll-target="#data-wrangling-and-transformation">Data Wrangling and Transformation</a>
+  <ul class="collapse">
+  <li><a href="#data-cleaning" id="toc-data-cleaning" class="nav-link" data-scroll-target="#data-cleaning">Data Cleaning</a></li>
+  <li><a href="#feature-engineering" id="toc-feature-engineering" class="nav-link" data-scroll-target="#feature-engineering">Feature Engineering</a></li>
+  <li><a href="#data-overview" id="toc-data-overview" class="nav-link" data-scroll-target="#data-overview">Data Overview</a></li>
+  </ul></li>
+  <li><a href="#analysis-strategy" id="toc-analysis-strategy" class="nav-link" data-scroll-target="#analysis-strategy">Analysis Strategy</a></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a>
+  <ul class="collapse">
+  <li><a href="#exploratory-data-analysis" id="toc-exploratory-data-analysis" class="nav-link" data-scroll-target="#exploratory-data-analysis">Exploratory Data Analysis</a>
+  <ul class="collapse">
+  <li><a href="#bird-activity-and-distribution" id="toc-bird-activity-and-distribution" class="nav-link" data-scroll-target="#bird-activity-and-distribution">Bird Activity and Distribution</a></li>
+  <li><a href="#geographic-distribution" id="toc-geographic-distribution" class="nav-link" data-scroll-target="#geographic-distribution">Geographic Distribution</a></li>
+  <li><a href="#climate" id="toc-climate" class="nav-link" data-scroll-target="#climate">Climate</a></li>
+  </ul></li>
+  <li><a href="#modeling-results" id="toc-modeling-results" class="nav-link" data-scroll-target="#modeling-results">Modeling Results</a>
+  <ul class="collapse">
+  <li><a href="#logistic-regression-comparison" id="toc-logistic-regression-comparison" class="nav-link" data-scroll-target="#logistic-regression-comparison">Logistic Regression Comparison</a></li>
+  <li><a href="#decision-tree-classification" id="toc-decision-tree-classification" class="nav-link" data-scroll-target="#decision-tree-classification">Decision Tree Classification</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion">Discussion</a>
+  <ul class="collapse">
+  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a></li>
+  <li><a href="#future-work" id="toc-future-work" class="nav-link" data-scroll-target="#future-work">Future Work</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content column-page-left" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">MATH 244: Intermediate Data Science Project</h1>
+<h1 class="title">Bird Sightings at Sea: Comprehensive Analysis and Predictive Modeling</h1>
 </div>
 
 
 
-<div class="quarto-title-meta">
+<div class="quarto-title-meta column-page-left">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Sydney Kahn &amp; Jacqueline Adelmann </p>
+          </div>
+  </div>
     
   
     
@@ -132,9 +208,2005 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>This is our website!!!</p>
+<section id="introductiondata" class="level1">
+<h1>Introduction/Data</h1>
+<section id="project-overview" class="level2">
+<h2 class="anchored" data-anchor-id="project-overview">Project Overview</h2>
+<p>This project explores bird sightings at sea using data from TidyTuesday (April 14, 2026). Each observation communicates the data that an observer witnessed during a 10-minute period at a port. Our goal is to understand the geographic distribution of bird sightings and predict flock sizes based on environmental factors like climate and location.</p>
+</section>
+<section id="data-source-context" class="level2">
+<h2 class="anchored" data-anchor-id="data-source-context">Data Source &amp; Context</h2>
+<p>The data captures observations of birds at sea, climate conditions, and ship activity. We integrated four tables: <code>birds</code> (sightings), <code>ships</code> (sessions), <code>beaufort_scale</code> (wind), and <code>sea_states</code> (ocean conditions).</p>
+<p>Each row in our composite data frame records data on one species that an observer witnessed during a 10-minute observation period at a port. For example, there may be five rows in our data frame that share the same observation session ID; each row communicates the observations about a unique bird species during that session, and the aggregate of the five rows’ observed bird counts is the total number of birds, regardless of species, observed during the 10-minute observation period. We explored observed bird counts per session both at the by-species level and at the overall session level.</p>
+</section>
+<section id="key-variables" class="level2">
+<h2 class="anchored" data-anchor-id="key-variables">Key Variables</h2>
+<ul>
+<li><strong>Outcome:</strong> Number of birds observed (often transformed into intervals or binary presence).</li>
+<li><strong>Predictors:</strong> Southern hemisphere season, longitude, latitude, precipitation, cloud cover, and sea state.</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Codebook
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<table class="table">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>species_family</code></td>
+<td>character</td>
+<td>Bird family, created by grouping species</td>
+</tr>
+<tr class="even">
+<td><code>count</code></td>
+<td>integer</td>
+<td>Number of birds counted in the observation</td>
+</tr>
+<tr class="odd">
+<td><code>feeding</code></td>
+<td>logical</td>
+<td>Birds observed feeding</td>
+</tr>
+<tr class="even">
+<td><code>flying_past</code></td>
+<td>logical</td>
+<td>Birds observed flying past the ship</td>
+</tr>
+<tr class="odd">
+<td><code>following_ship</code></td>
+<td>logical</td>
+<td>Birds observed following the ship</td>
+</tr>
+<tr class="even">
+<td><code>cloud_cover</code></td>
+<td>ordered</td>
+<td>“Clear”, “Partially Cloudy” or “Overcast”</td>
+</tr>
+<tr class="odd">
+<td><code>season</code></td>
+<td>ordered</td>
+<td>Southern hemisphere season</td>
+</tr>
+<tr class="even">
+<td><code>precipitation</code></td>
+<td>factor</td>
+<td>Precipitation type (Rain, Snow, Fog, etc.)</td>
+</tr>
+<tr class="odd">
+<td><code>sea_state_description</code></td>
+<td>ordered</td>
+<td>Description of sea state (Calm to Very Rough)</td>
+</tr>
+<tr class="even">
+<td><code>longitude</code></td>
+<td>double</td>
+<td>Decimal longitude</td>
+</tr>
+<tr class="odd">
+<td><code>latitude</code></td>
+<td>double</td>
+<td>Decimal latitude</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="methodology" class="level1">
+<h1>Methodology</h1>
+<section id="data-wrangling-and-transformation" class="level2">
+<h2 class="anchored" data-anchor-id="data-wrangling-and-transformation">Data Wrangling and Transformation</h2>
+<p>We merged the separate data frames by identifier columns to form an initial data frame with 49,019 observations.</p>
+<section id="data-cleaning" class="level3">
+<h3 class="anchored" data-anchor-id="data-cleaning">Data Cleaning</h3>
+<p>We chose to exclude observations with missing data to ensure that our exploratory assessments were not distorted. We first removed any observations missing core variables (count, species, coordinates, time). Next, we performed an iterative process:</p>
+<ol type="1">
+<li><p>Removed variables with &gt; 60% missing data.</p></li>
+<li><p>Removed observations with &gt; 60% missing variables.</p></li>
+<li><p>Removed variables with &gt; 20% missing data.</p></li>
+<li><p>Removed observations with any remaining missing data.</p></li>
+</ol>
+<p>This left us with 23,382 observations and 40 variables.</p>
+</section>
+<section id="feature-engineering" class="level3">
+<h3 class="anchored" data-anchor-id="feature-engineering">Feature Engineering</h3>
+<ul>
+<li><strong>Species Family:</strong> Grouped individual species into families (e.g., Albatross, Penguin) to ensure statistical utility.</li>
+<li><strong>Weather Grouping:</strong> Collapsed rare weather events into broader categories (“None”, “Rain/Showers”, “Harsh Weather”).</li>
+<li><strong>Log Transformation:</strong> Applied <code>log10(count + 1)</code> to address the extreme right-skew of bird counts, though we largely moved beyond this approach when possible to maintain interpretability.</li>
+<li><strong>Categorization:</strong> Created multi-level intervals (0-10, 11-50, etc.) for flock size prediction and binary dichtomizations (e.g., solo bird vs.&nbsp;flock and flock size less than or greater than 50 birds)</li>
+<li><strong>Session-level aggregation:</strong> Calculated the session-level total bird counts by, for each session, taking the aggregate of the counts of each observed species.</li>
+</ul>
+<div id="tbl-flock-size" class="quarto-layout-panel anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-flock-size-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Distribution of Bird Count Intervals
+</figcaption>
+<div aria-describedby="tbl-flock-size-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div id="mksmqmpnhv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mksmqmpnhv table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#mksmqmpnhv thead, #mksmqmpnhv tbody, #mksmqmpnhv tfoot, #mksmqmpnhv tr, #mksmqmpnhv td, #mksmqmpnhv th {
+  border-style: none;
+}
+
+#mksmqmpnhv p {
+  margin: 0;
+  padding: 0;
+}
+
+#mksmqmpnhv .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#mksmqmpnhv .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#mksmqmpnhv .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#mksmqmpnhv .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#mksmqmpnhv .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#mksmqmpnhv .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#mksmqmpnhv .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#mksmqmpnhv .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#mksmqmpnhv .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#mksmqmpnhv .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#mksmqmpnhv .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#mksmqmpnhv .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#mksmqmpnhv .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#mksmqmpnhv .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#mksmqmpnhv .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mksmqmpnhv .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#mksmqmpnhv .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#mksmqmpnhv .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#mksmqmpnhv .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mksmqmpnhv .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#mksmqmpnhv .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mksmqmpnhv .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#mksmqmpnhv .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mksmqmpnhv .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mksmqmpnhv .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mksmqmpnhv .gt_left {
+  text-align: left;
+}
+
+#mksmqmpnhv .gt_center {
+  text-align: center;
+}
+
+#mksmqmpnhv .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#mksmqmpnhv .gt_font_normal {
+  font-weight: normal;
+}
+
+#mksmqmpnhv .gt_font_bold {
+  font-weight: bold;
+}
+
+#mksmqmpnhv .gt_font_italic {
+  font-style: italic;
+}
+
+#mksmqmpnhv .gt_super {
+  font-size: 65%;
+}
+
+#mksmqmpnhv .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#mksmqmpnhv .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#mksmqmpnhv .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#mksmqmpnhv .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#mksmqmpnhv .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#mksmqmpnhv .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#mksmqmpnhv .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#mksmqmpnhv .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#mksmqmpnhv div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table do-not-create-environment cell table" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<caption>Distribution of By-Session and By-Species Flock Size Intervals</caption>
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header gt_col_headings">
+<th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" style="text-align: left;" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
+<th id="stat_0" class="gt_col_heading gt_columns_bottom_border gt_center" style="text-align: left;" data-quarto-table-cell-role="th" scope="col"><strong>N = 23,382</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">Bird Count Interval</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;0-10</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">21,492 (92%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;11-50</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">1,321 (5.6%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;51-100</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">204 (0.9%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;100+</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">365 (1.6%)</td>
+</tr>
+</tbody><tfoot>
+<tr class="even gt_footnotes">
+<td colspan="2" class="gt_footnote" style="text-align: left;"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> n (%)</td>
+</tr>
+</tfoot>
+
+</table>
+
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div id="onczpnzytw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#onczpnzytw table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#onczpnzytw thead, #onczpnzytw tbody, #onczpnzytw tfoot, #onczpnzytw tr, #onczpnzytw td, #onczpnzytw th {
+  border-style: none;
+}
+
+#onczpnzytw p {
+  margin: 0;
+  padding: 0;
+}
+
+#onczpnzytw .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#onczpnzytw .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#onczpnzytw .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#onczpnzytw .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#onczpnzytw .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#onczpnzytw .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#onczpnzytw .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#onczpnzytw .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#onczpnzytw .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#onczpnzytw .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#onczpnzytw .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#onczpnzytw .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#onczpnzytw .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#onczpnzytw .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#onczpnzytw .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#onczpnzytw .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#onczpnzytw .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#onczpnzytw .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#onczpnzytw .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#onczpnzytw .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#onczpnzytw .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#onczpnzytw .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#onczpnzytw .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#onczpnzytw .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#onczpnzytw .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#onczpnzytw .gt_left {
+  text-align: left;
+}
+
+#onczpnzytw .gt_center {
+  text-align: center;
+}
+
+#onczpnzytw .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#onczpnzytw .gt_font_normal {
+  font-weight: normal;
+}
+
+#onczpnzytw .gt_font_bold {
+  font-weight: bold;
+}
+
+#onczpnzytw .gt_font_italic {
+  font-style: italic;
+}
+
+#onczpnzytw .gt_super {
+  font-size: 65%;
+}
+
+#onczpnzytw .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#onczpnzytw .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#onczpnzytw .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#onczpnzytw .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#onczpnzytw .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#onczpnzytw .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#onczpnzytw .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#onczpnzytw .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#onczpnzytw div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table do-not-create-environment cell table" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<caption>Distributions of By-Session Presence of Flock</caption>
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header gt_col_headings">
+<th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" style="text-align: left;" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
+<th id="stat_0" class="gt_col_heading gt_columns_bottom_border gt_center" style="text-align: left;" data-quarto-table-cell-role="th" scope="col"><strong>N = 6,218</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">Solo vs. Flock</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Solo bird</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">474 (7.6%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" style="text-align: left;" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Flock (2+ Birds)</td>
+<td class="gt_row gt_center" style="text-align: left;" headers="stat_0">5,744 (92%)</td>
+</tr>
+</tbody><tfoot>
+<tr class="even gt_footnotes">
+<td colspan="2" class="gt_footnote" style="text-align: left;"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> n (%)</td>
+</tr>
+</tfoot>
+
+</table>
+
+</div>
+</div>
+</div>
+</div>
+</figure>
+</div>
+<p><a href="#tbl-flock-size" class="quarto-xref">Table&nbsp;1</a> demonstrates that the majority of bird count observations recorded less than ten birds but more than just one bird.</p>
+</section>
+<section id="data-overview" class="level3">
+<h3 class="anchored" data-anchor-id="data-overview">Data Overview</h3>
+<div class="cell">
+<div id="tbl-summary-table" class="cell quarto-float anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-summary-table-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Summary of bird observations
+</figcaption>
+<div aria-describedby="tbl-summary-table-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<div>
+<div id="qqewcqdkgk" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#qqewcqdkgk table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#qqewcqdkgk thead, #qqewcqdkgk tbody, #qqewcqdkgk tfoot, #qqewcqdkgk tr, #qqewcqdkgk td, #qqewcqdkgk th {
+  border-style: none;
+}
+
+#qqewcqdkgk p {
+  margin: 0;
+  padding: 0;
+}
+
+#qqewcqdkgk .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#qqewcqdkgk .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#qqewcqdkgk .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#qqewcqdkgk .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#qqewcqdkgk .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#qqewcqdkgk .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#qqewcqdkgk .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#qqewcqdkgk .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#qqewcqdkgk .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#qqewcqdkgk .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#qqewcqdkgk .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#qqewcqdkgk .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#qqewcqdkgk .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#qqewcqdkgk .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#qqewcqdkgk .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qqewcqdkgk .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#qqewcqdkgk .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#qqewcqdkgk .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#qqewcqdkgk .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qqewcqdkgk .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#qqewcqdkgk .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qqewcqdkgk .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#qqewcqdkgk .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qqewcqdkgk .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#qqewcqdkgk .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#qqewcqdkgk .gt_left {
+  text-align: left;
+}
+
+#qqewcqdkgk .gt_center {
+  text-align: center;
+}
+
+#qqewcqdkgk .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#qqewcqdkgk .gt_font_normal {
+  font-weight: normal;
+}
+
+#qqewcqdkgk .gt_font_bold {
+  font-weight: bold;
+}
+
+#qqewcqdkgk .gt_font_italic {
+  font-style: italic;
+}
+
+#qqewcqdkgk .gt_super {
+  font-size: 65%;
+}
+
+#qqewcqdkgk .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#qqewcqdkgk .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#qqewcqdkgk .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#qqewcqdkgk .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#qqewcqdkgk .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#qqewcqdkgk .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#qqewcqdkgk .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#qqewcqdkgk .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#qqewcqdkgk div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table do-not-create-environment cell table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header gt_col_headings">
+<th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
+<th id="stat_0" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>N = 23,382</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Bird Family</td>
+<td class="gt_row gt_center" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Albatross</td>
+<td class="gt_row gt_center" headers="stat_0">10,419 (45%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Petrel/Shearwater/Prion</td>
+<td class="gt_row gt_center" headers="stat_0">9,638 (41%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Gull/Tern</td>
+<td class="gt_row gt_center" headers="stat_0">1,022 (4.4%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Skua/Jaeger</td>
+<td class="gt_row gt_center" headers="stat_0">453 (1.9%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Penguin</td>
+<td class="gt_row gt_center" headers="stat_0">43 (0.2%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Gannet/Booby</td>
+<td class="gt_row gt_center" headers="stat_0">580 (2.5%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Cormorant/Shag</td>
+<td class="gt_row gt_center" headers="stat_0">25 (0.1%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Frigatebird/Tropicbird</td>
+<td class="gt_row gt_center" headers="stat_0">32 (0.1%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unidentified/Other</td>
+<td class="gt_row gt_center" headers="stat_0">1,170 (5.0%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Bird count</td>
+<td class="gt_row gt_center" headers="stat_0">51.9 (1,616.5)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">Season</td>
+<td class="gt_row gt_center" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Autumn</td>
+<td class="gt_row gt_center" headers="stat_0">4,683 (20%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Spring</td>
+<td class="gt_row gt_center" headers="stat_0">6,894 (29%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Summer</td>
+<td class="gt_row gt_center" headers="stat_0">7,027 (30%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Winter</td>
+<td class="gt_row gt_center" headers="stat_0">4,778 (20%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Cloud cover</td>
+<td class="gt_row gt_center" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Clear</td>
+<td class="gt_row gt_center" headers="stat_0">3,978 (17%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Overcast</td>
+<td class="gt_row gt_center" headers="stat_0">6,373 (27%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Partially Cloudy</td>
+<td class="gt_row gt_center" headers="stat_0">13,031 (56%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Precipitation</td>
+<td class="gt_row gt_center" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;None</td>
+<td class="gt_row gt_center" headers="stat_0">20,208 (86%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Rain/Showers</td>
+<td class="gt_row gt_center" headers="stat_0">2,330 (10.0%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Harsh Weather</td>
+<td class="gt_row gt_center" headers="stat_0">844 (3.6%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Unknown</td>
+<td class="gt_row gt_center" headers="stat_0">0 (0%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">Number of birds feeding</td>
+<td class="gt_row gt_center" headers="stat_0">1,739 (7.4%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Number of birds flying past</td>
+<td class="gt_row gt_center" headers="stat_0">9,406 (40%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">Number of birds following ships</td>
+<td class="gt_row gt_center" headers="stat_0">11,101 (47%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Sea state</td>
+<td class="gt_row gt_center" headers="stat_0"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Calm, Rippled</td>
+<td class="gt_row gt_center" headers="stat_0">1,484 (6.3%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Moderate</td>
+<td class="gt_row gt_center" headers="stat_0">7,858 (34%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Rough</td>
+<td class="gt_row gt_center" headers="stat_0">4,028 (17%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Slight</td>
+<td class="gt_row gt_center" headers="stat_0">9,231 (39%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Smooth</td>
+<td class="gt_row gt_center" headers="stat_0">1 (&lt;0.1%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Very Rough</td>
+<td class="gt_row gt_center" headers="stat_0">780 (3.3%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">Longitude</td>
+<td class="gt_row gt_center" headers="stat_0">152 (18)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">Latitude</td>
+<td class="gt_row gt_center" headers="stat_0">-40 (7)</td>
+</tr>
+</tbody><tfoot>
+<tr class="even gt_footnotes">
+<td colspan="2" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> n (%); Mean (SD)</td>
+</tr>
+</tfoot>
+
+</table>
+
+</div>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p><a href="#tbl-summary-table" class="quarto-xref">Table&nbsp;2</a> conveys the overall composition of our data. Most birds were of the Albatross or Petrel/Shearwater/Prion families. Bird observations were relatively evenly distributed across seasons, but much more commonly appeared during partially cloudy days with no precipitation and a slight to moderate sea state.</p>
+</section>
+</section>
+<section id="analysis-strategy" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-strategy">Analysis Strategy</h2>
+<p>We focused on exploratory data analysis of and classification models that predict bird presence and flock sizes.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-skew" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-skew-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-skew-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-skew-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Distribution of bird counts per observation session. Observe the extreme right skew towards counts of around zero to two birds.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As observed in <a href="#fig-skew" class="quarto-xref">Figure&nbsp;1</a>, our data were extremely skewed. This motivated our use of the intervals that we engineered for EDA and the following classification models:</p>
+<ol type="1">
+<li><p><strong>Logistic Regression (Model 1):</strong> Solo bird vs.&nbsp;Flock (presence of &gt;1 bird).</p></li>
+<li><p><strong>Logistic Regression (Model 2):</strong> Large flocks (&gt;50 birds) using session-level aggregates.</p></li>
+<li><p><strong>Decision Tree:</strong> Multi-class classification of flock size intervals.</p></li>
+</ol>
+</section>
+</section>
+<section id="results" class="level1">
+<h1>Results</h1>
+<section id="exploratory-data-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-data-analysis">Exploratory Data Analysis</h2>
+<section id="bird-activity-and-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="bird-activity-and-distribution">Bird Activity and Distribution</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-activity-plot" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-activity-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-activity-plot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-activity-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Frequency of Observed Bird Activities
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As observed in <a href="#fig-activity-plot" class="quarto-xref">Figure&nbsp;2</a>, the most frequent bird activities observed include flying past a ship and following the vessel. As we lost most to all of our ship data during data cleaning, we felt there was little interpretable incentive to focus in on these activities. Hence, we maintained a focus on treating total number of birds observed as our outcome of interest.</p>
+</section>
+<section id="geographic-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="geographic-distribution">Geographic Distribution</h3>
+<p>We explored geographic distribution of bird observations in the interest of finding a potential relationship between location and flock size.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-geographic-map" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-geographic-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-geographic-map-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-geographic-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Geographic Distribution of Bird Count Intervals
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Sightings of larger flocks appear to be highly clustered, as observed in <a href="#fig-geographic-map" class="quarto-xref">Figure&nbsp;3</a>; however, this clustering may correlate with the clustering of observation locations.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-observation-density" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-observation-density-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-observation-density-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-observation-density-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Spatial Density of Observations
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-observation-density" class="quarto-xref">Figure&nbsp;4</a> demonstrates that the density of observations in the data align with the density of larger flock observations, which raises the question of whether geographic distribution is providing meaningful information in this investigation.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-dbscan-clusters" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-dbscan-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-dbscan-clusters-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-dbscan-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: DBSCAN Clustering of Sightings
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>We also used DBSCAN (<span class="math inline">\(\epsilon = 3\)</span>, <span class="math inline">\(minPts = 5\)</span>) to identify high-density sighting regions. As seen in <a href="#fig-dbscan-clusters" class="quarto-xref">Figure&nbsp;5</a>, the clustering heavily reflects the spatial concentration of observation effort.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-latitude-boxplot" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-latitude-boxplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-latitude-boxplot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-latitude-boxplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Latitudinal Distribution of Bird Count Intervals
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>We examined whether certain flock sizes were more common at specific latitudes. <a href="#fig-latitude-boxplot" class="quarto-xref">Figure&nbsp;6</a> suggests that while most sightings occur in temperate southern latitudes, larger flocks are distributed across a similar latitudinal range as smaller sightings.</p>
+<p>Overall, larger flock sizes appear to occur around Southern Australia and New Zealand, but we cannot confidently state that these trends reflect true patterns in bird behavior due to the geographic distribution of data collection.</p>
+</section>
+<section id="climate" class="level3">
+<h3 class="anchored" data-anchor-id="climate">Climate</h3>
+<p>We explored various climate measures that were available to us to observe their potential relationships with observed bird counts.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-season" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-season-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-season-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-season-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: Proportion of bird count intervals by season. Flock sizes may be slightly larger around spring and winter seasons.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As seen in <a href="#fig-season" class="quarto-xref">Figure&nbsp;7</a>, slightly larger flock sizes may be observed more frequently in the spring and winter, indicating that season could be a useful metric for modeling bird counts.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-sea" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sea-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-sea-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sea-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Proportion of bird count intervals by sea state. With sample size of each sea state in mind, proportions appear relatively even.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-sea" class="quarto-xref">Figure&nbsp;8</a> illustrates that, bar the single observation for a smooth sea state, bird counts were roughly similar across sea states. However, there is a slight intuitive increase in larger flock sizes when sea states are calmer, compared to very rough.</p>
+</section>
+</section>
+<section id="modeling-results" class="level2">
+<h2 class="anchored" data-anchor-id="modeling-results">Modeling Results</h2>
+<section id="logistic-regression-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="logistic-regression-comparison">Logistic Regression Comparison</h3>
+<p>We compared two logistic regression models. <strong>Model 1</strong> predicted bird presence (count &gt; 1), while <strong>Model 2</strong> predicted large flocks (&gt;50 birds).</p>
+<div>
+
+</div>
+<div class="cell quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div id="fig-modeling-comparison-1" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-modeling-comparison-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-modeling-comparison-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-modeling-comparison-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: ROC Curves. Model 1 (left) models presence of a flock vs.&nbsp;a single bird. Model 2 (right) models size of flock (&gt;50 birds)
+</figcaption>
+</figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div id="fig-modeling-comparison-2" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-modeling-comparison-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-modeling-comparison-2.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-modeling-comparison-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: ROC Curves. Model 1 (left) models presence of a flock vs.&nbsp;a single bird. Model 2 (right) models size of flock (&gt;50 birds)
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>Based on these results (<strong>?@fig-modeling-comparison</strong>), <strong>Model 1</strong> (AUC = 0.6384) performs slightly better than <strong>Model 2</strong> (AUC = 0.5815). This indicates that the environmental and spatial factors used in this study are better at discriminating between solo birds and small groups than they are at identifying very large flocks.</p>
+</section>
+<section id="decision-tree-classification" class="level3">
+<h3 class="anchored" data-anchor-id="decision-tree-classification">Decision Tree Classification</h3>
+<p>The decision tree classifies bird counts into four intervals (0-10, 11-50, 51-100, 100+). The model achieved a high accuracy (92.1%), largely by correctly identifying the most common small-flock categories.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-decision-tree-viz" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-decision-tree-viz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="index_files/figure-html/fig-decision-tree-viz-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-decision-tree-viz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: Decision Tree for Flock Size Intervals
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The tree is particularly effective at classifying the 0-10 and 11-50 bird categories, which represent the bulk of the observations (<a href="#fig-decision-tree-viz" class="quarto-xref">Figure&nbsp;11</a>). The test error was approximately 0.079, indicating strong performance for these common intervals.</p>
+<p>Though this tree has a high success rate, it achieves it through the rather banal approach of classifying nearly every (or is it literally every?) observation as falling within the 0-10 bird interval, and thus it does not seem to truly discriminate between the two flocks more than it simply can bet on flock size being small often enough that it can classify a flock size as small every time. [i worded this poorly]</p>
+</section>
+</section>
+</section>
+<section id="discussion" class="level1">
+<h1>Discussion</h1>
+<section id="conclusions" class="level2">
+<h2 class="anchored" data-anchor-id="conclusions">Conclusions</h2>
+<ul>
+<li><strong>Skewness:</strong> Bird counts are extremely right-skewed. The large range and sparse data in high-count regions make binary or interval classification more robust than regression, but still very limited.</li>
+<li><strong>Geography:</strong> Sightings are highly clustered spatially, but this density likely reflects observation locations rather than true flock size trends.</li>
+<li><strong>Environment:</strong> Climate factors like cloud cover, sea state, and precipitation may play a role in bird presence, but the moderate AUC (~0.64) in our models suggests significant variance remains unexplained.</li>
+<li><strong>Model Performance:</strong> Model 1 (Presence vs Solo) outperformed Model 2 (Large flocks), suggesting environmental predictors are more useful for general presence than for identifying specific high-intensity flocking events.</li>
+</ul>
+</section>
+<section id="future-work" class="level2">
+<h2 class="anchored" data-anchor-id="future-work">Future Work</h2>
+<ul>
+<li><strong>Temporal Trends:</strong> Comparing this historical data to more recent observations from the Sea Bird Tracking Database.</li>
+<li><strong>Global Expansion:</strong> Expanding the geographic area to include the Northern hemisphere to see if these ecological relationships hold globally.</li>
+<li><strong>Advanced Modeling:</strong> Exploring more non-linear or ensemble methods to continue improving models of the interactions between weather and bird behavior.</li>
+<li><strong>Migration Patterns:</strong> Part of our interest in looking at geographic distributions and seasonality was the possibility of piecing together the migration patterns of birds in this region of the world; however, our data were so skewed and limited in interpretability that we were unable to truly explore this. Future work may seek a more robust data set to analyze migration patterns more closely.</li>
+</ul>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
