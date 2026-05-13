@@ -399,6 +399,8 @@ ggplot(session_data, aes(x = season, fill = bird_interval_four)) +
   theme_minimal() +
   coord_flip() + 
   scale_fill_brewer(palette = "YlOrRd") + # fun color palette lol 
+  scale_x_discrete(labels= c("Winter" = "Winter, n=4778", "Summer" = "Summer, n=7027",
+                             "Spring" = "Spring, n=6894", "Autumn" = "Autumn, n=4683")) +
   labs(title = "Proportion of Bird Count Intervals by Season",
        x = "Season", y = "Proportion", fill = "Bird Count Interval")
 ```
@@ -418,6 +420,9 @@ ggplot(session_data %>% drop_na(sea_state_description), aes(x = sea_state_descri
   scale_fill_brewer(palette = "YlOrRd", name = "Bird Count\nInterval") +
   theme_minimal() +
   coord_flip() + 
+  scale_x_discrete(labels = c("Very Rough" = "Very Rough, n=780", "Calm, Rippled" = "Calm, Rippled, n=1484",
+                              "Moderate" = "Moderate, n=7858", "Rough" = "Rough n=4028",
+                              "Slight" = "Slight, n=9231", "Smooth" = "Smooth, n=1")) +
   labs(title = "Bird Count Intervals by Sea State",
        x = "Sea State Description", 
        y = "Proportion of Observations")
@@ -531,7 +536,7 @@ rpart.plot(bird_tree, box.palette="Blues")
 
 The tree is particularly effective at classifying the 0-10 and 11-50 bird categories, which represent the bulk of the observations (@fig-decision-tree-viz). The test error was approximately 0.079, indicating strong performance for these common intervals. 
 
-Though this tree has a high success rate, it achieves it through the rather banal approach of classifying nearly every (or is it literally every?) observation as falling within the 0-10 bird interval, and thus it does not seem to truly discriminate between the two flocks more than it simply can bet on flock size being small often enough that it can classify a flock size as small every time. \[i worded this poorly\]
+Though this tree has a high success rate, it achieves it through the rather banal approach of classifying nearly every observation as falling within the 0-10 bird interval, and thus it does not seem to truly discriminate flock size well. Rather, the decision tree performs well due to the extreme skew of the data, since a random sample of observations will most likely have this skew as well. 
 
 # Discussion
 
