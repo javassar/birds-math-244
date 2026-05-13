@@ -16,7 +16,12 @@ editor:
 
 # Further Exploration
 
-We noticed from EDA that the `count` variable was very right-skewed, and had a large range including regions with very sparse data. To examine this further, and to potentially determine if there was a range of the `count` data that could be used for prediction, we decided to look at the range from a count of 10 to the mean (51.9) plus one standard deviation (1616.5), which is 1668.4 birds. 
+We noticed from EDA that the `count` variable was very right-skewed, and
+had a large range including regions with very sparse data. To examine
+this further, and to potentially determine if there was a range of the
+`count` data that could be used for prediction, we decided to look at
+the range from a count of 10 to the mean (51.9) plus one standard
+deviation (1616.5), which is 1668.4 birds.
 
 ```{r}
 #| label: loading in the data
@@ -85,7 +90,17 @@ ggplot(session_data %>% filter(total_birds < 1000), aes(x = as.numeric(total_bir
 
 ```
 
-Looking at this much smaller region of the `count` data compared to the whole dataset, this is much more interpretable, but we can still see the issue of a heavy right-skew and regions with sparse data. Since there were so many observations with no birds, we decided to make a new variable that transformed the bird count variable into a binary variable. Then, we could make a Logistic Regression model to predict the appearance of birds. We decided to transform the total number of birds variable in two ways: the first being `count` is greater than 1 or `count` is less than or equal to 1, and the second being `total_birds` is 0-50, or 51+. The first model uses the `df_logistic` dataset, and the second model uses the aggregated `session_data` set. 
+Looking at this much smaller region of the `count` data compared to the
+whole dataset, this is much more interpretable, but we can still see the
+issue of a heavy right-skew and regions with sparse data. Since there
+were so many observations with no birds, we decided to make a new
+variable that transformed the bird count variable into a binary
+variable. Then, we could make a Logistic Regression model to predict the
+appearance of birds. We decided to transform the total number of birds
+variable in two ways: the first being `count` is greater than 1 or
+`count` is less than or equal to 1, and the second being `total_birds`
+is 0-50, or 51+. The first model uses the `df_logistic` dataset, and the
+second model uses the aggregated `session_data` set.
 
 ```{r}
 #| label: bird appearance binary variable
@@ -214,9 +229,16 @@ ggroc(roc2, legacy.axes = TRUE) + #set axes to 1-specificity vs sensitivity
     y= "sensitivity") + 
   theme_minimal()
 ```
-Based on these two logistic regression models, it appears that the model that separates the `birds` variable into `count` is greater than 1 and `count` is less than or equal to 1 (Model 1) performs slightly better (AUC_1 = 0.6384 vs AUC_2 = 0.5815). This indicates that Model 1 has a slightly better discrimination ability than Model 2, though neither is excellent. 
 
-To further examine our data, we decided to run a Decision Tree to classify the total birds into smaller intervals. 
+Based on these two logistic regression models, it appears that the model
+that separates the `birds` variable into `count` is greater than 1 and
+`count` is less than or equal to 1 (Model 1) performs slightly better
+(AUC_1 = 0.6384 vs AUC_2 = 0.5815). This indicates that Model 1 has a
+slightly better discrimination ability than Model 2, though neither is
+excellent.
+
+To further examine our data, we decided to run a Decision Tree to
+classify the total birds into smaller intervals.
 
 ```{r}
 #| label: decision tree
@@ -267,4 +289,9 @@ pheatmap(cm3, display_number = TRUE, number_color="white", main="Confusion Matri
 test3_error <- 1- (10766/11688)
 ```
 
-The test error for the Decision Tree is 0.079, which is very low. Based on the confusion matrix, the tree is good at classifying the more common categories of 0-10 birds and 11-50 birds, which are also the two categories that indicate the smallest number of birds. This makes sense, as around half of the data reports numbers of birds between 0-10 and half 10+. 
+The test error for the Decision Tree is 0.079, which is very low. Based
+on the confusion matrix, the tree is good at classifying the more common
+categories of 0-10 birds and 11-50 birds, which are also the two
+categories that indicate the smallest number of birds. This makes sense,
+as around half of the data reports numbers of birds between 0-10 and
+half 10+.

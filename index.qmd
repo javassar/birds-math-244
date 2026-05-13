@@ -499,7 +499,7 @@ ggroc(roc2, legacy.axes = TRUE) +
   theme_minimal()
 ```
 
-Based on these results (@fig-modeling-comparison), **Model 1** (AUC = 0.6384) performs slightly better than **Model 2** (AUC = 0.5815). This indicates that the environmental and spatial factors used in this study are better at discriminating between solo birds and small groups than they are at identifying very large flocks.
+Based on these results, **Figure 9** (AUC = 0.6384) performs slightly better than **Figure 10** (AUC = 0.5815). This indicates that the environmental and spatial factors used in this study are better at discriminating between solo birds and small groups than they are at identifying very large flocks.
 
 ### Decision Tree Classification
 
