@@ -14,4 +14,4 @@ editor:
     wrap: 72
 ---
 
-Thank you to Professor Robin for your guidance, and to the other students in Math244 who inspired some of the directions that we took in our project! 
+Thank you to Professor Robin for your guidance, and to the other students in Math 244 who inspired some of the directions that we took in our project! Thanks as well to TidyTuesday and to Te Papa Tongarewa, The Museum of New Zealand, for making this data available.  
